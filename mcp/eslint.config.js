@@ -13,13 +13,14 @@ export default defineConfig([
     rules: {
       // Allow console.log in cli.ts (CLI output), warn everywhere else
       "no-console": ["warn", { allow: ["warn", "error"] }],
-      "eqeqeq": ["error", "always"],
+      "eqeqeq": ["error", "always", { null: "ignore" }],
       "no-var": "error",
       "prefer-const": "error",
       "no-debugger": "error",
       "no-eval": "error",
       "no-implied-eval": "error",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      "no-useless-assignment": "warn",
       "no-empty": ["error", { allowEmptyCatch: false }],
       "no-useless-catch": "error",
     },
