@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+mcp/dist/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Env
+.env
+.env.local
+.env.production
+
+# Test
+.coverage
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+
+# Build
+*.whl
+*.tar.gz
