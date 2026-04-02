@@ -33,7 +33,10 @@ jobs:
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
-      - run: cd mcp && npm ci && npm run build && npm publish
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - run: cd mcp && pnpm install --frozen-lockfile && pnpm run build && pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
