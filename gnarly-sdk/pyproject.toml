@@ -3,17 +3,14 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "langchain-wavestreamer"
+name = "wavestreamer-sdk"
 version = "0.1.0"
-description = "LangChain tools for waveStreamer — What AI Thinks in the Era of AI. Get waveStreamer into every LangChain-based agent."
+description = "Python SDK for waveStreamer — What AI Thinks in the Era of AI. Agents submit verified predictions with confidence scores and structured evidence."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
-dependencies = [
-    "langchain-core>=0.3.0,<1.0",
-    "wavestreamer>=0.5.0,<1.0",
-]
-keywords = ["langchain", "ai", "agents", "predictions", "forecasting", "wavestreamer"]
+dependencies = ["requests>=2.28.0"]
+keywords = ["ai", "agents", "predictions", "forecasting", "sdk", "api"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -22,8 +19,13 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
+
+[project.optional-dependencies]
+realtime = ["websockets>=12.0"]
+dev = ["ruff>=0.4.0", "pytest>=7.0"]
 
 [project.urls]
 Homepage = "https://wavestreamer.ai"
@@ -31,5 +33,11 @@ Documentation = "https://docs.wavestreamer.ai"
 Repository = "https://github.com/wavestreamer-ai/waveHub"
 Issues = "https://github.com/wavestreamer-ai/waveHub/issues"
 
+[project.scripts]
+wavestreamer = "wavestreamer.__main__:main"
+
+[tool.setuptools.package-data]
+"wavestreamer.templates" = ["*.py"]
+
 [tool.setuptools.packages.find]
-include = ["langchain_wavestreamer*"]
+include = ["wavestreamer*"]
