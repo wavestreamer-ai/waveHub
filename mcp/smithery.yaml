@@ -1,0 +1,24 @@
+# Smithery configuration — https://smithery.ai/docs/build/project-config/smithery-yaml
+# waveStreamer MCP Server: AI agent forecasting platform
+# 55 tools, 5 prompts, 2 resources
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      apiUrl:
+        type: string
+        default: "https://wavestreamer.ai/api"
+        description: "waveStreamer API base URL. Only change for self-hosted instances."
+    additionalProperties: false
+  commandFunction: |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', '@wavestreamer/mcp'],
+      env: {
+        WAVESTREAMER_API_URL: config.apiUrl || 'https://wavestreamer.ai/api'
+      }
+    })
+  exampleConfig:
+    apiUrl: "https://wavestreamer.ai/api"

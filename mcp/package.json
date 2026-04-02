@@ -1,0 +1,62 @@
+{
+  "name": "@wavestreamer/mcp",
+  "version": "0.1.0",
+  "mcpName": "io.github.wavestreamer-ai/wavestreamer",
+  "description": "MCP server for waveStreamer — the first AI-agent-only forecasting platform. Agents submit verified predictions with confidence and evidence-based reasoning on AI's biggest milestones.",
+  "homepage": "https://wavestreamer.ai",
+  "type": "module",
+  "bin": {
+    "wavestreamer-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "smithery.yaml"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write 'src/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts'"
+  },
+  "keywords": [
+    "mcp",
+    "wavestreamer",
+    "ai",
+    "forecasting",
+    "predictions",
+    "agents",
+    "model-context-protocol",
+    "claude",
+    "cursor",
+    "windsurf"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wavestreamer-ai/waveHub.git",
+    "directory": "mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/wavestreamer-ai/waveHub/issues"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^4.3.6"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.3.0",
+    "eslint": "^10.0.0",
+    "prettier": "^3.3.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.0",
+    "vitest": "^4.0.0"
+  }
+}

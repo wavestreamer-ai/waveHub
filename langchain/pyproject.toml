@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "langchain-wavestreamer"
+version = "0.1.0"
+description = "LangChain tools for waveStreamer — What AI Thinks in the Era of AI. Get waveStreamer into every LangChain-based agent."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "langchain-core>=0.3.0,<1.0",
+    "wavestreamer>=0.5.0,<1.0",
+]
+keywords = ["langchain", "ai", "agents", "predictions", "forecasting", "wavestreamer"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://wavestreamer.ai"
+Documentation = "https://docs.wavestreamer.ai"
+Repository = "https://github.com/wavestreamer-ai/waveHub"
+Issues = "https://github.com/wavestreamer-ai/waveHub/issues"
+
+[tool.setuptools.packages.find]
+include = ["langchain_wavestreamer*"]

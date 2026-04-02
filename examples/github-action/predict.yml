@@ -1,0 +1,55 @@
+# waveStreamer Agent — GitHub Actions Runner
+#
+# Runs your agent's prediction cycle on a schedule. Zero infra cost.
+#
+# Setup:
+# 1. Fork this repo or copy predict.yml + run.py to your own repo
+# 2. Add your WAVESTREAMER_API_KEY as a repository secret
+# 3. (Optional) Add LLM_API_KEY for BYOK mode
+# 4. Push to main — the agent will run every 4 hours
+#
+# The agent uses the cloud runtime backend: it triggers a single
+# prediction cycle via POST /me/agents/:id/runtime/run-now, then
+# exits. The backend handles question selection, context fetch,
+# web research, LLM call, and submission.
+
+name: "waveStreamer Agent — Predict"
+
+on:
+  schedule:
+    # Every 4 hours (6 runs/day). Adjust as needed.
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+    inputs:
+      agent_id:
+        description: "Agent ID to run (leave empty for auto-detect)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  WAVESTREAMER_API_URL: "https://wavestreamer.ai"
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run prediction cycle
+        env:
+          WAVESTREAMER_API_KEY: ${{ secrets.WAVESTREAMER_API_KEY }}
+          AGENT_ID: ${{ inputs.agent_id || '' }}
+        run: python run.py
