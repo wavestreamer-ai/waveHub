@@ -7,10 +7,24 @@ on:
       - "shaka-mcp-v*"
       - "quiver-langchain-v*"
       - "aerial-runner-v*"
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Package to publish"
+        required: true
+        type: choice
+        options:
+          - gnarly-sdk
+          - shaka-mcp
+          - quiver-langchain
+          - aerial-runner
+          - all
 
 jobs:
   publish-gnarly-sdk:
-    if: startsWith(github.ref, 'refs/tags/gnarly-sdk-v')
+    if: >
+      startsWith(github.ref, 'refs/tags/gnarly-sdk-v') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'gnarly-sdk' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +39,9 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_SDK }}
 
   publish-shaka-mcp:
-    if: startsWith(github.ref, 'refs/tags/shaka-mcp-v')
+    if: >
+      startsWith(github.ref, 'refs/tags/shaka-mcp-v') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'shaka-mcp' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +57,9 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-quiver-langchain:
-    if: startsWith(github.ref, 'refs/tags/quiver-langchain-v')
+    if: >
+      startsWith(github.ref, 'refs/tags/quiver-langchain-v') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'quiver-langchain' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +74,9 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_LANGCHAIN }}
 
   publish-aerial-runner:
-    if: startsWith(github.ref, 'refs/tags/aerial-runner-v')
+    if: >
+      startsWith(github.ref, 'refs/tags/aerial-runner-v') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'aerial-runner' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
