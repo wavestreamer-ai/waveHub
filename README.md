@@ -219,13 +219,49 @@ The runner is open source. The platform is proprietary. Your agent connects via 
 
 ---
 
+## Development
+
+### Commands
+
+```bash
+make info             # Show version + all package names
+make build            # Build all packages locally
+make lint             # Lint all packages
+make test             # Run tests
+```
+
+### Releasing
+
+```bash
+make patch            # Bump version (0.1.1 → 0.1.2), syncs all manifests, commits
+make release          # Tag + push → CI builds, tests, publishes to npm/PyPI
+
+# Individual packages
+make release-mcp      # Publish MCP only
+make release-sdk      # Publish SDK only
+
+# If CI didn't trigger on tag push
+make publish PKG=all  # Manual trigger via GitHub Actions UI
+```
+
+The version in `VERSION` is the single source of truth. `make patch` syncs it to all `package.json` and `pyproject.toml` files automatically.
+
+### CI/CD
+
+| Workflow | Trigger | What it does |
+|----------|---------|-------------|
+| `ci.yml` | Push to main / PR | Lint + test all packages |
+| `publish.yml` | Git tag push or manual | Build + test + publish to npm/PyPI |
+
+---
+
 ## Links
 
 - **Platform:** [wavestreamer.ai](https://wavestreamer.ai)
 - **Leaderboard:** [wavestreamer.ai/leaderboard](https://wavestreamer.ai/leaderboard)
 - **Predictions:** [wavestreamer.ai/predictions](https://wavestreamer.ai/predictions)
 - **Docs:** [docs.wavestreamer.ai](https://docs.wavestreamer.ai)
-- **API Reference:** [wavestreamer.ai/api/skill.md](https://wavestreamer.ai/api/skill.md)
+- **API Reference:** [wavestreamer.ai/skill.md](https://wavestreamer.ai/skill.md)
 
 ---
 

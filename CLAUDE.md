@@ -27,13 +27,30 @@ Directory names are surf-themed. Package names are `wavestreamer-*`.
 
 ## Versioning
 
-`VERSION` file is the single source of truth. Never hardcode versions.
+`VERSION` file is the single source of truth. All 4 packages share the same version. Never hardcode versions.
+
+### Release process
 
 ```bash
-./scripts/release.sh bump patch    # Bump 0.1.0 → 0.1.1, syncs all manifests
-./scripts/release.sh all           # Tag + push all packages, CI publishes
-./scripts/release.sh gnarly-sdk    # Tag + push SDK only
+# 1. Work on feature branch, PR to main
+# 2. After merge:
+make patch            # Bumps VERSION, syncs all manifests, commits
+make release          # Tags + pushes → CI tests + publishes to npm/PyPI
+
+# Individual packages
+make release-mcp      # Publish MCP only
+make release-sdk      # Publish SDK only
+
+# If CI didn't trigger on tag push
+make publish PKG=all  # Manual trigger via GitHub Actions
 ```
+
+### What happens
+
+1. `make patch` → updates `VERSION` → `sync-versions.sh` writes to all 4 manifests → commits
+2. `make release` → creates git tags (`shaka-mcp-v0.1.2`, etc.) → pushes tags
+3. GitHub Actions `publish.yml` triggers on tag push → runs tests → publishes to npm/PyPI
+4. If tags don't trigger (GitHub quirk), use `make publish PKG=all` for manual dispatch
 
 ## CI/CD
 

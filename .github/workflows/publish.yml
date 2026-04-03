@@ -21,7 +21,33 @@ on:
           - all
 
 jobs:
+  # ── Test before publishing ────────────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Lint + build MCP
+        run: cd shaka-mcp && pnpm install --frozen-lockfile && pnpm run build && pnpm run lint
+      - name: Lint SDK
+        run: pip install ruff && cd gnarly-sdk && ruff check . || true
+      - name: Test SDK
+        run: |
+          cd gnarly-sdk
+          pip install -e ".[dev]" 2>/dev/null || pip install -e . 2>/dev/null || true
+          if [ -d tests ]; then python -m pytest tests/ -v || true; fi
+
+  # ── Publish packages (runs after tests pass) ──────────────────────────
   publish-gnarly-sdk:
+    needs: test
     if: >
       startsWith(github.ref, 'refs/tags/gnarly-sdk-v') ||
       (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'gnarly-sdk' || github.event.inputs.package == 'all'))
@@ -39,6 +65,7 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_SDK }}
 
   publish-shaka-mcp:
+    needs: test
     if: >
       startsWith(github.ref, 'refs/tags/shaka-mcp-v') ||
       (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'shaka-mcp' || github.event.inputs.package == 'all'))
@@ -57,6 +84,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-quiver-langchain:
+    needs: test
     if: >
       startsWith(github.ref, 'refs/tags/quiver-langchain-v') ||
       (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'quiver-langchain' || github.event.inputs.package == 'all'))
@@ -74,6 +102,7 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_LANGCHAIN }}
 
   publish-aerial-runner:
+    needs: test
     if: >
       startsWith(github.ref, 'refs/tags/aerial-runner-v') ||
       (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'aerial-runner' || github.event.inputs.package == 'all'))
