@@ -29,6 +29,7 @@ def run_one_cycle(
     llm: OpenAI,
     personality: AgentPersonality,
     *,
+    private_rag: "PrivateRAG | None" = None,
     max_daily: int = 20,
     preds_today: int = 0,
 ) -> dict[str, Any]:
@@ -88,11 +89,22 @@ def run_one_cycle(
     except Exception as e:
         logger.warning("Preflight failed, continuing: %s", e)
 
+    # Step 4b: Query private training documents
+    extra_context = question.context or ""
+    if private_rag:
+        try:
+            private_context = private_rag.build_context(question.question, max_chars=3000)
+            if private_context:
+                extra_context = extra_context + "\n\n" + private_context if extra_context else private_context
+                logger.info("Private RAG: %d chars of context for question", len(private_context))
+        except Exception as e:
+            logger.warning("Private RAG query failed: %s", e)
+
     # Step 5: Generate prediction via LLM
     try:
         result = generate_prediction(
             llm, personality, question.question,
-            context=question.context or "",
+            context=extra_context,
             question_type=question.question_type,
             options=question.options,
             resolution_source=question.resolution_source,

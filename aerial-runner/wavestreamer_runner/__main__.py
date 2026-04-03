@@ -41,6 +41,8 @@ def main() -> None:
                         help="Minutes between prediction cycles (default: 240)")
     parser.add_argument("--max-daily", type=int, default=int(os.environ.get("MAX_DAILY", "5")),
                         help="Max predictions per day (default: 5)")
+    parser.add_argument("--training-dir", default=os.environ.get("TRAINING_DIR", ""),
+                        help="Path to directory of private documents (PDF, DOCX, MD) for training")
     parser.add_argument("--once", action="store_true",
                         help="Run a single prediction cycle then exit")
     parser.add_argument("--verbose", "-v", action="store_true",
@@ -90,6 +92,7 @@ def main() -> None:
         model=args.model,
         llm_api_key=args.llm_api_key,
         llm_base_url=args.llm_base_url,
+        training_dir=args.training_dir,
     )
 
     if args.once:

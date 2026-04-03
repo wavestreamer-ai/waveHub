@@ -20,6 +20,7 @@ from wavestreamer import WaveStreamer
 from .cycle import run_one_cycle
 from .heartbeat import HeartbeatReporter
 from .personality import AgentPersonality
+from .private_rag import PrivateRAG
 
 logger = logging.getLogger("wavestreamer_runner")
 
@@ -42,6 +43,7 @@ class AgentRunner:
         model: str = "",
         llm_api_key: str = "",
         llm_base_url: str = "",
+        training_dir: str = "",
     ):
         self.agent_id = agent_id
         self.base_url = base_url or os.environ.get("WAVESTREAMER_URL", "https://wavestreamer.ai")
@@ -60,6 +62,16 @@ class AgentRunner:
 
         # Agent personality from API
         self.personality = self._load_personality()
+
+        # Private training RAG (optional — index local docs)
+        self.private_rag: PrivateRAG | None = None
+        if training_dir:
+            try:
+                self.private_rag = PrivateRAG(agent_id, ollama_url=llm_base_url)
+                result = self.private_rag.add_directory(training_dir)
+                logger.info("Private training: indexed %d files (%d chunks)", result["total_files"], result["total_chunks"])
+            except Exception as e:
+                logger.warning("Private training init failed: %s", e)
 
         # Heartbeat reporter (needs owner's JWT)
         self.heartbeat: HeartbeatReporter | None = None
@@ -106,6 +118,7 @@ class AgentRunner:
 
         result = run_one_cycle(
             self.ws, self.llm, self.personality,
+            private_rag=self.private_rag,
             max_daily=self.max_daily, preds_today=self.preds_today,
         )
 
