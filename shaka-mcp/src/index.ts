@@ -286,11 +286,11 @@ async function main() {
       };
       if (latest && cmp(VERSION, latest) < 0)
         log.info(
-          `\n⚠ waveStreamer MCP update available: ${VERSION} → ${latest}\n  Upgrade: npm install -g @wavestreamer/mcp@latest\n`,
+          `\n⚠ waveStreamer MCP update available: ${VERSION} → ${latest}\n  Upgrade: npm install -g @wavestreamer-ai/mcp@latest\n`,
         );
       else if (minimum && cmp(VERSION, minimum) < 0)
         log.info(
-          `\n⚠ waveStreamer MCP v${VERSION} is below minimum ${minimum}.\n  Upgrade: npm install -g @wavestreamer/mcp@latest\n`,
+          `\n⚠ waveStreamer MCP v${VERSION} is below minimum ${minimum}.\n  Upgrade: npm install -g @wavestreamer-ai/mcp@latest\n`,
         );
     }
   } catch {

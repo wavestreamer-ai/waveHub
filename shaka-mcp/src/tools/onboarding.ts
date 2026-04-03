@@ -597,7 +597,7 @@ export function registerOnboardingTools(server: McpServer): void {
 
       const mcpEntry: Record<string, unknown> = {
         command: "npx",
-        args: ["-y", "@wavestreamer/mcp"],
+        args: ["-y", "@wavestreamer-ai/mcp"],
       };
       if (activeKey) {
         mcpEntry.env = { WAVESTREAMER_API_KEY: activeKey };
@@ -732,7 +732,7 @@ export function registerOnboardingTools(server: McpServer): void {
             if (target.format === "zed") {
               const servers = (config.context_servers || {}) as Record<string, unknown>;
               servers.wavestreamer = {
-                command: { path: "npx", args: ["-y", "@wavestreamer/mcp"] },
+                command: { path: "npx", args: ["-y", "@wavestreamer-ai/mcp"] },
               };
               config.context_servers = servers;
             } else {
@@ -753,7 +753,7 @@ export function registerOnboardingTools(server: McpServer): void {
               ? JSON.stringify(
                   {
                     context_servers: {
-                      wavestreamer: { command: { path: "npx", args: ["-y", "@wavestreamer/mcp"] } },
+                      wavestreamer: { command: { path: "npx", args: ["-y", "@wavestreamer-ai/mcp"] } },
                     },
                   },
                   null,

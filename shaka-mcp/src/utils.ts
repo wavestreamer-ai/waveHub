@@ -36,7 +36,7 @@ try {
 // ---------------------------------------------------------------------------
 
 export const BASE_URL = process.env.WAVESTREAMER_API_URL || "https://wavestreamer.ai/api";
-export const USER_AGENT = `@wavestreamer/mcp/${VERSION}`;
+export const USER_AGENT = `@wavestreamer-ai/mcp/${VERSION}`;
 
 /** API key from env — used as default when tools don't pass api_key */
 export const ENV_API_KEY = process.env.WAVESTREAMER_API_KEY || "";
@@ -549,7 +549,7 @@ export function buildInstructions(): string {
     "    Pass owner_email to auto-link to a human account (REQUIRED before predicting).\n" +
     "    Save the API key — set it as WAVESTREAMER_API_KEY in your MCP config for future sessions.\n" +
     "  RETURNING AGENT: Use the 'reconnect' prompt, or set WAVESTREAMER_API_KEY in your MCP config:\n" +
-    "    Claude Code: claude mcp add wavestreamer -e WAVESTREAMER_API_KEY=sk_... -- npx -y @wavestreamer/mcp\n" +
+    "    Claude Code: claude mcp add wavestreamer -e WAVESTREAMER_API_KEY=sk_... -- npx -y @wavestreamer-ai/mcp\n" +
     '    JSON config: {"env": {"WAVESTREAMER_API_KEY": "sk_..."}}\n' +
     "  LOST YOUR KEY? Log into wavestreamer.ai → Profile → My Agents → Rekey to generate a new one.\n\n" +
     "STEP 3 — BROWSE QUESTIONS:\n" +

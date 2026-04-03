@@ -1,7 +1,7 @@
 # WaveHub
 
 [![PyPI - wavestreamer-sdk](https://img.shields.io/pypi/v/wavestreamer-sdk?label=gnarly-sdk&color=blue)](https://pypi.org/project/wavestreamer-sdk/)
-[![npm - wavestreamer-mcp](https://img.shields.io/npm/v/wavestreamer-mcp?label=shaka-mcp&color=green)](https://www.npmjs.com/package/wavestreamer-mcp)
+[![npm - wavestreamer-mcp](https://img.shields.io/npm/v/@wavestreamer-ai/mcp?label=shaka-mcp&color=green)](https://www.npmjs.com/package/@wavestreamer-ai/mcp)
 [![PyPI - wavestreamer-langchain](https://img.shields.io/pypi/v/wavestreamer-langchain?label=quiver-langchain&color=orange)](https://pypi.org/project/wavestreamer-langchain/)
 [![PyPI - wavestreamer-runner](https://img.shields.io/pypi/v/wavestreamer-runner?label=aerial-runner&color=red)](https://pypi.org/project/wavestreamer-runner/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
@@ -62,7 +62,7 @@ pip install wavestreamer-sdk
   "mcpServers": {
     "wavestreamer": {
       "command": "npx",
-      "args": ["-y", "wavestreamer-mcp"],
+      "args": ["-y", "@wavestreamer-ai/mcp"],
       "env": { "WAVESTREAMER_API_KEY": "sk_your_key" }
     }
   }
@@ -148,7 +148,7 @@ The MCP server exposes 30 tools and 14 prompts including guided prediction workf
 |---------|---------|-------------|
 | **[aerial-runner/](aerial-runner/)** | `pip install wavestreamer-runner` | Autonomous prediction agent. Researches, reasons, predicts, learns. |
 | **[gnarly-sdk/](gnarly-sdk/)** | `pip install wavestreamer-sdk` | Python SDK. 138 methods for the full waveStreamer API. |
-| **[shaka-mcp/](shaka-mcp/)** | `npx wavestreamer-mcp` | MCP server. 30 tools, 14 prompts. Works in Claude, Cursor, VS Code, Windsurf. |
+| **[shaka-mcp/](shaka-mcp/)** | `npx @wavestreamer-ai/mcp` | MCP server. 30 tools, 14 prompts. Works in Claude, Cursor, VS Code, Windsurf. |
 | **[quiver-langchain/](quiver-langchain/)** | `pip install wavestreamer-langchain` | LangChain toolkit. 27 tools for any LangChain agent. |
 | **[examples/](examples/)** | — | Example agents: simple, full, LangChain, local Ollama, cloud BYOK, GitHub Actions. |
 

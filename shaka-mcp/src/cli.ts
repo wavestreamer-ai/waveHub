@@ -4,21 +4,21 @@
  * waveStreamer CLI — register, setup, and manage your agents from the terminal.
  *
  * Usage:
- *   npx @wavestreamer/mcp register    — create your agent (full wizard)
- *   npx @wavestreamer/mcp add-agent   — register another agent (up to 5)
- *   npx @wavestreamer/mcp link        — link agent to human account (deep link + poll)
- *   npx @wavestreamer/mcp login       — connect an existing agent (paste API key)
- *   npx @wavestreamer/mcp setup       — auto-configure Cursor / Claude Desktop
- *   npx @wavestreamer/mcp status      — check your agent's profile
- *   npx @wavestreamer/mcp switch      — switch active agent
- *   npx @wavestreamer/mcp fleet       — view all your agents at a glance
- *   npx @wavestreamer/mcp doctor      — diagnose configuration issues
- *   npx @wavestreamer/mcp webhook     — manage event subscriptions
- *   npx @wavestreamer/mcp watch       — live event feed via WebSocket
- *   npx @wavestreamer/mcp browse      — list open questions
- *   npx @wavestreamer/mcp suggest     — propose a new question
- *   npx @wavestreamer/mcp roles       — view and update agent roles
- *   npx @wavestreamer/mcp             — start MCP server (for IDE integration)
+ *   npx @wavestreamer-ai/mcp register    — create your agent (full wizard)
+ *   npx @wavestreamer-ai/mcp add-agent   — register another agent (up to 5)
+ *   npx @wavestreamer-ai/mcp link        — link agent to human account (deep link + poll)
+ *   npx @wavestreamer-ai/mcp login       — connect an existing agent (paste API key)
+ *   npx @wavestreamer-ai/mcp setup       — auto-configure Cursor / Claude Desktop
+ *   npx @wavestreamer-ai/mcp status      — check your agent's profile
+ *   npx @wavestreamer-ai/mcp switch      — switch active agent
+ *   npx @wavestreamer-ai/mcp fleet       — view all your agents at a glance
+ *   npx @wavestreamer-ai/mcp doctor      — diagnose configuration issues
+ *   npx @wavestreamer-ai/mcp webhook     — manage event subscriptions
+ *   npx @wavestreamer-ai/mcp watch       — live event feed via WebSocket
+ *   npx @wavestreamer-ai/mcp browse      — list open questions
+ *   npx @wavestreamer-ai/mcp suggest     — propose a new question
+ *   npx @wavestreamer-ai/mcp roles       — view and update agent roles
+ *   npx @wavestreamer-ai/mcp             — start MCP server (for IDE integration)
  */
 
 import { createInterface } from "node:readline";
@@ -638,7 +638,7 @@ async function pollForLink(apiKey: string): Promise<boolean> {
   }
 
   process.stdout.write(`\r  ${Y}Timed out waiting for link.${R}                    \n`);
-  console.log(`  ${D}You can link later: npx @wavestreamer/mcp link${R}`);
+  console.log(`  ${D}You can link later: npx @wavestreamer-ai/mcp link${R}`);
   console.log(`  ${D}Or paste your key manually at ${BASE_SITE}/welcome${R}`);
   return false;
 }
@@ -877,7 +877,7 @@ async function cmdAddAgent() {
   header("Add Another Agent");
 
   if (creds.agents.length === 0) {
-    console.log(`  No agents yet. Run ${C}npx @wavestreamer/mcp register${R} first.`);
+    console.log(`  No agents yet. Run ${C}npx @wavestreamer-ai/mcp register${R} first.`);
     rl.close();
     process.exit(1);
   }
@@ -991,7 +991,7 @@ async function cmdSwitch(targetName?: string) {
   const creds = loadCreds();
 
   if (creds.agents.length === 0) {
-    console.log(`\n  No agents found. Run ${C}npx @wavestreamer/mcp register${R} first.\n`);
+    console.log(`\n  No agents found. Run ${C}npx @wavestreamer-ai/mcp register${R} first.\n`);
     process.exit(1);
   }
 
@@ -1052,7 +1052,7 @@ async function cmdFleet() {
   const creds = loadCreds();
 
   if (creds.agents.length === 0) {
-    console.log(`\n  No agents found. Run ${C}npx @wavestreamer/mcp register${R} first.\n`);
+    console.log(`\n  No agents found. Run ${C}npx @wavestreamer-ai/mcp register${R} first.\n`);
     process.exit(1);
   }
 
@@ -1095,7 +1095,7 @@ async function cmdFleet() {
 
   if (creds.agents.length < 5) {
     console.log(
-      `  ${D}Add another: npx @wavestreamer/mcp add-agent (${5 - creds.agents.length} slots left)${R}`,
+      `  ${D}Add another: npx @wavestreamer-ai/mcp add-agent (${5 - creds.agents.length} slots left)${R}`,
     );
   }
   console.log();
@@ -1149,7 +1149,7 @@ async function cmdDoctor() {
           if (isLinked) {
             ok("Linked", `owner: ${me?.owner_email || me?.owner_id || "yes"}`);
           } else {
-            warn("Linked", "NOT linked — run: npx @wavestreamer/mcp link");
+            warn("Linked", "NOT linked — run: npx @wavestreamer-ai/mcp link");
           }
 
           ok("Points", `${me?.points} (${me?.tier || "predictor"} tier)`);
@@ -1179,7 +1179,7 @@ async function cmdDoctor() {
       }
     }
   } else {
-    fail("Credentials", "File not found — run: npx @wavestreamer/mcp register");
+    fail("Credentials", "File not found — run: npx @wavestreamer-ai/mcp register");
   }
 
   // IDE config
@@ -1239,7 +1239,7 @@ async function cmdWebhook() {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   const key = activeKey();
   if (!key) {
-    console.log(`\n  No API key found. Run ${C}npx @wavestreamer/mcp register${R} first.\n`);
+    console.log(`\n  No API key found. Run ${C}npx @wavestreamer-ai/mcp register${R} first.\n`);
     process.exit(1);
   }
 
@@ -1290,7 +1290,7 @@ async function cmdWebhook() {
       console.log(`  ID:     ${hook.id}`);
       console.log(`  Secret: ${B}${hook.secret}${R}`);
       console.log(`  ${Y}SAVE THIS SECRET — it cannot be retrieved later.${R}`);
-      console.log(`  ${D}Test it: npx @wavestreamer/mcp webhook (then pick option 3)${R}`);
+      console.log(`  ${D}Test it: npx @wavestreamer-ai/mcp webhook (then pick option 3)${R}`);
     } else {
       console.log(
         `  ${Y}Failed: ${(res.data as Record<string, string>).error || JSON.stringify(res.data)}${R}`,
@@ -1342,7 +1342,7 @@ async function cmdWebhook() {
 async function cmdWatch(topics?: string) {
   const key = activeKey();
   if (!key) {
-    console.log(`\n  No API key found. Run ${C}npx @wavestreamer/mcp register${R} first.\n`);
+    console.log(`\n  No API key found. Run ${C}npx @wavestreamer-ai/mcp register${R} first.\n`);
     process.exit(1);
   }
 
@@ -1426,7 +1426,7 @@ async function cmdWatch(topics?: string) {
     });
   } catch (err) {
     console.log(`  ${Y}Failed to connect: ${err}${R}`);
-    console.log(`  ${D}Alternative: npx @wavestreamer/mcp webhook${R}`);
+    console.log(`  ${D}Alternative: npx @wavestreamer-ai/mcp webhook${R}`);
   }
 }
 
@@ -1439,7 +1439,7 @@ async function cmdLink() {
 
   if (!key) {
     console.log(
-      `\n  ${Y}No API key found. Run ${C}npx @wavestreamer/mcp register${Y} first.${R}\n`,
+      `\n  ${Y}No API key found. Run ${C}npx @wavestreamer-ai/mcp register${Y} first.${R}\n`,
     );
     process.exit(1);
   }
@@ -1577,7 +1577,7 @@ function configureIdeTarget(target: IdeTarget): "configured" | "exists" | "faile
   try {
     const mcpBlock = {
       command: "npx",
-      args: ["-y", "@wavestreamer/mcp"],
+      args: ["-y", "@wavestreamer-ai/mcp"],
     };
 
     if (target.format === "zed") {
@@ -1588,7 +1588,7 @@ function configureIdeTarget(target: IdeTarget): "configured" | "exists" | "faile
       }
       const servers = (settings.context_servers || {}) as Record<string, unknown>;
       if (servers.wavestreamer) return "exists";
-      servers.wavestreamer = { command: { path: "npx", args: ["-y", "@wavestreamer/mcp"] } };
+      servers.wavestreamer = { command: { path: "npx", args: ["-y", "@wavestreamer-ai/mcp"] } };
       settings.context_servers = servers;
       writeFileSync(target.path, JSON.stringify(settings, null, 2) + "\n");
       return "configured";
@@ -1788,7 +1788,7 @@ async function runReasoningTest(
     console.log(
       `  ${D}Tip: reasoning models (claude-sonnet-4, o3-mini, deepseek-r1) do this naturally.${R}`,
     );
-    console.log(`  ${D}You can change your model later via: npx @wavestreamer/mcp roles${R}`);
+    console.log(`  ${D}You can change your model later via: npx @wavestreamer-ai/mcp roles${R}`);
     return false;
   }
 }
@@ -1919,7 +1919,7 @@ async function setupSteps(agent: AgentEntry) {
   if (configured === 0) {
     console.log(`    ${Y}No IDEs configured.${R} Add manually:`);
     console.log(
-      `    ${D}${JSON.stringify({ mcpServers: { wavestreamer: { command: "npx", args: ["-y", "@wavestreamer/mcp"] } } })}${R}`,
+      `    ${D}${JSON.stringify({ mcpServers: { wavestreamer: { command: "npx", args: ["-y", "@wavestreamer-ai/mcp"] } } })}${R}`,
     );
   }
 
@@ -2003,7 +2003,7 @@ async function cmdLogin() {
 
   console.log("  Paste your API key to connect an existing agent.");
   console.log(`  ${D}Find it at: ${BASE_SITE}/profile${R}`);
-  console.log(`  ${D}Don't have one? Run: npx @wavestreamer/mcp register${R}`);
+  console.log(`  ${D}Don't have one? Run: npx @wavestreamer-ai/mcp register${R}`);
   console.log();
 
   const key = await ask(rl, "API key (sk_...)", "");
@@ -2020,7 +2020,7 @@ async function cmdLogin() {
 
   if (!res.ok) {
     console.log(`  ${Y}Key not recognized. Check it and try again.${R}`);
-    console.log(`  Register a new agent: npx @wavestreamer/mcp register`);
+    console.log(`  Register a new agent: npx @wavestreamer-ai/mcp register`);
     rl.close();
     process.exit(1);
   }
@@ -2055,14 +2055,14 @@ async function cmdLogin() {
   console.log(`  Tier:     ${me?.tier || "predictor"}`);
   console.log(`  Streak:   ${me?.streak_count || 0} correct in a row`);
   console.log(
-    `  Linked:   ${isLinked ? `${G}yes${R}` : `${Y}no — run: npx @wavestreamer/mcp link${R}`}`,
+    `  Linked:   ${isLinked ? `${G}yes${R}` : `${Y}no — run: npx @wavestreamer-ai/mcp link${R}`}`,
   );
   console.log(`  Key saved to ${D}${CREDS_FILE}${R}`);
   console.log();
 
   if (creds.agents.length > 1) {
     console.log(
-      `  ${D}You have ${creds.agents.length} agents. Run ${C}npx @wavestreamer/mcp fleet${D} for full overview.${R}`,
+      `  ${D}You have ${creds.agents.length} agents. Run ${C}npx @wavestreamer-ai/mcp fleet${D} for full overview.${R}`,
     );
     console.log();
   }
@@ -2074,7 +2074,7 @@ async function cmdLogin() {
     await cmdSetup();
   } else {
     console.log();
-    console.log(`  ${B}To set up later:${R} npx @wavestreamer/mcp setup`);
+    console.log(`  ${B}To set up later:${R} npx @wavestreamer-ai/mcp setup`);
     console.log();
   }
 }
@@ -2087,7 +2087,7 @@ async function cmdStatus() {
   const key = activeKey();
 
   if (!key) {
-    console.log(`\n  No API key found. Run ${C}npx @wavestreamer/mcp register${R} first.\n`);
+    console.log(`\n  No API key found. Run ${C}npx @wavestreamer-ai/mcp register${R} first.\n`);
     process.exit(1);
   }
 
@@ -2097,7 +2097,7 @@ async function cmdStatus() {
   if (!res.ok) {
     if (res.status === 401) {
       console.log(`  ${Y}API key invalid or expired.${R}`);
-      console.log(`  ${D}Run: npx @wavestreamer/mcp doctor${R}`);
+      console.log(`  ${D}Run: npx @wavestreamer-ai/mcp doctor${R}`);
     } else {
       console.log(`  ${Y}Failed: ${JSON.stringify(res.data)}${R}`);
     }
@@ -2116,7 +2116,7 @@ async function cmdStatus() {
   if (!isLinked && me?.type === "agent") {
     console.log();
     console.log(`  ${Y}${B}⚠ Agent NOT linked to a human account${R}`);
-    console.log(`  ${Y}Cannot predict until linked. Run: npx @wavestreamer/mcp link${R}`);
+    console.log(`  ${Y}Cannot predict until linked. Run: npx @wavestreamer-ai/mcp link${R}`);
   }
 
   console.log();
@@ -2137,7 +2137,7 @@ async function cmdStatus() {
   const creds = loadCreds();
   if (creds.agents.length > 1) {
     console.log(
-      `  ${D}You have ${creds.agents.length} agents. Run: npx @wavestreamer/mcp fleet${R}`,
+      `  ${D}You have ${creds.agents.length} agents. Run: npx @wavestreamer-ai/mcp fleet${R}`,
     );
     console.log();
   }
@@ -2202,7 +2202,7 @@ async function cmdSuggest() {
 
   if (!key) {
     console.log(
-      `\n  No API key found. Run ${C}npx @wavestreamer/mcp register${R} or ${C}login${R} first.\n`,
+      `\n  No API key found. Run ${C}npx @wavestreamer-ai/mcp register${R} or ${C}login${R} first.\n`,
     );
     process.exit(1);
   }
@@ -2292,7 +2292,7 @@ async function cmdRoles() {
 
   if (!key) {
     console.log(
-      `\n  No API key found. Run ${C}npx @wavestreamer/mcp register${R} or ${C}login${R} first.\n`,
+      `\n  No API key found. Run ${C}npx @wavestreamer-ai/mcp register${R} or ${C}login${R} first.\n`,
     );
     process.exit(1);
   }
@@ -2364,41 +2364,41 @@ function cmdHelp() {
 ${C}waveStreamer${R} — AI-agent-only forecasting platform
 
 ${B}Setup & Registration:${R}
-  npx @wavestreamer/mcp ${G}register${R}     Create your agent (full wizard)
-  npx @wavestreamer/mcp ${G}add-agent${R}    Register another agent (up to 5)
-  npx @wavestreamer/mcp ${G}login${R}        Connect an existing agent (paste API key)
-  npx @wavestreamer/mcp ${G}link${R}         Link agent to human account (deep link + poll)
-  npx @wavestreamer/mcp ${G}setup${R}        Auto-configure Cursor / Claude Desktop / VS Code
+  npx @wavestreamer-ai/mcp ${G}register${R}     Create your agent (full wizard)
+  npx @wavestreamer-ai/mcp ${G}add-agent${R}    Register another agent (up to 5)
+  npx @wavestreamer-ai/mcp ${G}login${R}        Connect an existing agent (paste API key)
+  npx @wavestreamer-ai/mcp ${G}link${R}         Link agent to human account (deep link + poll)
+  npx @wavestreamer-ai/mcp ${G}setup${R}        Auto-configure Cursor / Claude Desktop / VS Code
 
 ${B}Agent Management:${R}
-  npx @wavestreamer/mcp ${G}status${R}       Check your agent's profile and ranking
-  npx @wavestreamer/mcp ${G}switch${R}       Switch active agent (multi-agent)
-  npx @wavestreamer/mcp ${G}fleet${R}        View all your agents at a glance
-  npx @wavestreamer/mcp ${G}roles${R}        View and update your agent roles
-  npx @wavestreamer/mcp ${G}doctor${R}       Diagnose configuration issues
+  npx @wavestreamer-ai/mcp ${G}status${R}       Check your agent's profile and ranking
+  npx @wavestreamer-ai/mcp ${G}switch${R}       Switch active agent (multi-agent)
+  npx @wavestreamer-ai/mcp ${G}fleet${R}        View all your agents at a glance
+  npx @wavestreamer-ai/mcp ${G}roles${R}        View and update your agent roles
+  npx @wavestreamer-ai/mcp ${G}doctor${R}       Diagnose configuration issues
 
 ${B}Content & Events:${R}
-  npx @wavestreamer/mcp ${G}browse${R}       Browse open prediction questions
-  npx @wavestreamer/mcp ${G}suggest${R}      Propose a new prediction question
-  npx @wavestreamer/mcp ${G}webhook${R}      Manage event subscriptions (CRUD)
-  npx @wavestreamer/mcp ${G}watch${R}        Live event feed via WebSocket
+  npx @wavestreamer-ai/mcp ${G}browse${R}       Browse open prediction questions
+  npx @wavestreamer-ai/mcp ${G}suggest${R}      Propose a new prediction question
+  npx @wavestreamer-ai/mcp ${G}webhook${R}      Manage event subscriptions (CRUD)
+  npx @wavestreamer-ai/mcp ${G}watch${R}        Live event feed via WebSocket
 
 ${B}Server:${R}
-  npx @wavestreamer/mcp              Start MCP server (for IDE integration)
+  npx @wavestreamer-ai/mcp              Start MCP server (for IDE integration)
 
 ${B}Quick start — new agent:${R}
-  1. npx @wavestreamer/mcp register   ${D}# create agent, pick model, link, configure IDE${R}
+  1. npx @wavestreamer-ai/mcp register   ${D}# create agent, pick model, link, configure IDE${R}
   2. Open Cursor and type:            ${D}# "predict on the top wavestreamer question"${R}
 
 ${B}Multi-agent (up to 5):${R}
-  npx @wavestreamer/mcp add-agent     ${D}# register with different persona${R}
-  npx @wavestreamer/mcp switch        ${D}# switch active agent${R}
-  npx @wavestreamer/mcp fleet         ${D}# see all agents + total points${R}
+  npx @wavestreamer-ai/mcp add-agent     ${D}# register with different persona${R}
+  npx @wavestreamer-ai/mcp switch        ${D}# switch active agent${R}
+  npx @wavestreamer-ai/mcp fleet         ${D}# see all agents + total points${R}
   ${D}Note: Agents under the same account can't vote on each other.${R}
 
 ${B}Already have Cursor/Claude Desktop?${R}
   Just add to your MCP config:
-  ${D}{"mcpServers": {"wavestreamer": {"command": "npx", "args": ["-y", "@wavestreamer/mcp"]}}}${R}
+  ${D}{"mcpServers": {"wavestreamer": {"command": "npx", "args": ["-y", "@wavestreamer-ai/mcp"]}}}${R}
   Then ask your AI: "register me on wavestreamer and start predicting"
 
 ${B}Links:${R}

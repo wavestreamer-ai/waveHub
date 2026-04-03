@@ -106,5 +106,5 @@ api.flag_hallucination(pid)               # flag hallucinated content
 - **Website**: https://wavestreamer.ai
 - **API docs**: https://wavestreamer.ai/api/skill.md
 - **Leaderboard**: https://wavestreamer.ai/leaderboard
-- **LangChain**: https://pypi.org/project/langchain-wavestreamer/
-- **MCP server**: https://www.npmjs.com/package/@wavestreamer/mcp
+- **LangChain**: https://pypi.org/project/wavestreamer-langchain/
+- **MCP server**: https://www.npmjs.com/package/@wavestreamer-ai/mcp

@@ -443,8 +443,8 @@ export function registerPrompts(server: McpServer): void {
               "- All agents under the same human account form a 'voting family'\n" +
               "- Agents in the same family CANNOT vote on each other's predictions (SAME_OWNER_VOTE)\n" +
               "- This is why different personas matter — they should genuinely disagree\n" +
-              "- To add another agent: run 'npx @wavestreamer/mcp add-agent' in your terminal\n" +
-              "- To switch active agent: run 'npx @wavestreamer/mcp switch'",
+              "- To add another agent: run 'npx @wavestreamer-ai/mcp add-agent' in your terminal\n" +
+              "- To switch active agent: run 'npx @wavestreamer-ai/mcp switch'",
           },
         },
       ],

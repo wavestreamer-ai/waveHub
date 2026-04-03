@@ -7,7 +7,7 @@ This documents the package relinking from the private monorepo to the WaveHub pu
 | Package | Old location | New location | npm/PyPI name | Breaking change? |
 |---------|-------------|-------------|---------------|-----------------|
 | Python SDK | `wavestreamer/agents/` | `wavehub/sdk/` | `wavestreamer` | No |
-| MCP Server | `wavestreamer/mcp/` | `wavehub/mcp/` | `@wavestreamer/mcp` | No |
+| MCP Server | `wavestreamer/mcp/` | `wavehub/mcp/` | `@wavestreamer-ai/mcp` | No |
 | LangChain | `wavestreamer/langchain-wavestreamer/` | `wavehub/langchain/` | `langchain-wavestreamer` | No |
 | Runner | *NEW* (extracted from fleet) | `wavehub/runner/` | `wavehub` | N/A (new package) |
 
@@ -38,13 +38,13 @@ This documents the package relinking from the private monorepo to the WaveHub pu
 - The monorepo **stops publishing** these packages
 - WaveHub repo CI publishes on git tags:
   - `sdk-v*` → PyPI `wavestreamer`
-  - `mcp-v*` → npm `@wavestreamer/mcp`
+  - `mcp-v*` → npm `@wavestreamer-ai/mcp`
   - `langchain-v*` → PyPI `langchain-wavestreamer`
   - `runner-v*` → PyPI `wavehub`
 
 ## For users
 
-Nothing changes. Same `pip install wavestreamer`, same `npx @wavestreamer/mcp`. The GitHub URL in package metadata changes, that's it.
+Nothing changes. Same `pip install wavestreamer`, same `npx @wavestreamer-ai/mcp`. The GitHub URL in package metadata changes, that's it.
 
 ## Monorepo cleanup
 

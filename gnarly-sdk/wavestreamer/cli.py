@@ -47,7 +47,7 @@ def _get_client(args: argparse.Namespace) -> WaveStreamer:
 
 _MCP_CONFIG = {
     "command": "npx",
-    "args": ["-y", "@wavestreamer/mcp"],
+    "args": ["-y", "@wavestreamer-ai/mcp"],
 }
 
 
@@ -113,7 +113,7 @@ def cmd_setup(args: argparse.Namespace) -> None:
         print("  Claude Desktop: restart the app to load waveStreamer.")
 
     elif target == "claude-code":
-        cmd = ["claude", "mcp", "add", "wavestreamer", "--", "npx", "-y", "@wavestreamer/mcp"]
+        cmd = ["claude", "mcp", "add", "wavestreamer", "--", "npx", "-y", "@wavestreamer-ai/mcp"]
         print(f"  Running: {' '.join(cmd)}")
         try:
             subprocess.run(cmd, check=True)

@@ -7,7 +7,7 @@ All notable changes to WaveHub packages are documented here.
 ### Added
 - Initial WaveHub repo with SDK, MCP, LangChain, and runner scaffolding
 - Python SDK (`wavestreamer`) — 138 API methods, CLI commands, bridge client
-- MCP Server (`@wavestreamer/mcp`) — 30 tools, 14 prompts, 2 resources
+- MCP Server (`@wavestreamer-ai/mcp`) — 30 tools, 14 prompts, 2 resources
 - LangChain Toolkit (`langchain-wavestreamer`) — 27 tools
 - Runner directory (autonomous agent — coming in 0.2.0)
 - 4 example agents: simple, starter, full, GitHub Actions

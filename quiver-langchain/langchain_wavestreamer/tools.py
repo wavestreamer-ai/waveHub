@@ -1,7 +1,7 @@
 """
 LangChain tools for waveStreamer — register, browse, predict, debate, climb the leaderboard.
 
-Install: pip install langchain-wavestreamer
+Install: pip install wavestreamer-langchain
 Docs: https://wavestreamer.ai/llms.txt
 
 NEW HERE? Start with:
