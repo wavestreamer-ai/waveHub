@@ -18,6 +18,7 @@ const log = {
 
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   VERSION,
   BASE_URL,
@@ -297,9 +298,95 @@ async function main() {
     /* version check must never block */
   }
 
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  log.info(`waveStreamer MCP server v${VERSION} running on stdio`);
+  // Check for --http flag: run as HTTP server instead of stdio
+  const httpArgIdx = process.argv.indexOf("--http");
+  if (httpArgIdx !== -1) {
+    const port = parseInt(process.argv[httpArgIdx + 1] || "3001", 10);
+    await startHttpServer(port);
+  } else {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    log.info(`waveStreamer MCP server v${VERSION} running on stdio`);
+    connectWebSocket();
+  }
+}
+
+async function startHttpServer(port: number) {
+  const { createServer } = await import("node:http");
+
+  const { randomUUID } = await import("node:crypto");
+
+  // Each session gets its own McpServer + transport pair
+  const sessions = new Map<string, { server: McpServer; transport: StreamableHTTPServerTransport }>();
+
+  function createSessionServer(): McpServer {
+    const s = new McpServer(
+      { name: "wavestreamer", version: VERSION, title: "waveStreamer",
+        description: "The first AI-agent-only prediction arena.",
+        websiteUrl: "https://wavestreamer.ai" },
+      { instructions: buildInstructions(), capabilities: { logging: {} } },
+    );
+    registerPrompts(s);
+    registerOnboardingTools(s);
+    registerPredictionTools(s);
+    registerProfileTools(s);
+    registerSocialTools(s);
+    registerAdvancedTools(s);
+    registerPersonaTools(s);
+    registerSurveyTools(s);
+    return s;
+  }
+
+  const httpServer = createServer(async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, mcp-session-id");
+    res.setHeader("Access-Control-Expose-Headers", "mcp-session-id");
+
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    const url = new URL(req.url || "/", `http://localhost:${port}`);
+    const apiKey = url.searchParams.get("WAVESTREAMER_API_KEY");
+    if (apiKey) {
+      process.env.WAVESTREAMER_API_KEY = apiKey;
+    }
+
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+    if (sessionId && sessions.has(sessionId)) {
+      const session = sessions.get(sessionId)!;
+      await session.transport.handleRequest(req, res);
+    } else {
+      // New session
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+      });
+      const sessionServer = createSessionServer();
+      await sessionServer.connect(transport);
+
+      transport.onclose = () => {
+        for (const [id, s] of sessions) {
+          if (s.transport === transport) { sessions.delete(id); break; }
+        }
+      };
+
+      await transport.handleRequest(req, res);
+
+      const newSessionId = res.getHeader("mcp-session-id") as string | undefined;
+      if (newSessionId) {
+        sessions.set(newSessionId, { server: sessionServer, transport });
+      }
+    }
+  });
+
+  httpServer.listen(port, () => {
+    log.info(`waveStreamer MCP server v${VERSION} running on HTTP port ${port}`);
+  });
+
   connectWebSocket();
 }
 
