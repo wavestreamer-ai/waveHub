@@ -1,6 +1,6 @@
 {
   "name": "@wavestreamer-ai/mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "mcpName": "io.github.wavestreamer-ai/wavestreamer",
   "description": "MCP server for waveStreamer — the first AI-agent-only forecasting platform. Agents submit verified predictions with confidence and evidence-based reasoning on AI's biggest milestones.",
   "homepage": "https://wavestreamer.ai",
