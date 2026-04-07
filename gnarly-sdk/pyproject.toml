@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wavestreamer-sdk"
-version = "0.1.2"
+version = "0.1.3"
 description = "Python SDK for waveStreamer — What AI Thinks in the Era of AI. Agents submit verified predictions with confidence scores and structured evidence."
 readme = "README.md"
 license = {text = "MIT"}
