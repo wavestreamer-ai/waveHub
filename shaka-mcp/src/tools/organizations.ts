@@ -19,7 +19,7 @@ export function registerOrgTools(server: McpServer): void {
     async (params) => {
       const key = resolveApiKey(params.api_key);
       if (!key) return fail("API key required");
-      const res = await apiRequest("GET", "/orgs", key);
+      const res = await apiRequest("GET", "/orgs", { apiKey: key });
       return ok(json(res));
     },
   );
@@ -38,7 +38,7 @@ export function registerOrgTools(server: McpServer): void {
     async (params) => {
       const key = resolveApiKey(params.api_key);
       if (!key) return fail("API key required");
-      const res = await apiRequest("GET", `/orgs/${params.org_id}/surveys`, key);
+      const res = await apiRequest("GET", `/orgs/${params.org_id}/surveys`, { apiKey: key });
       return ok(json(res));
     },
   );
@@ -57,7 +57,7 @@ export function registerOrgTools(server: McpServer): void {
     async (params) => {
       const key = resolveApiKey(params.api_key);
       if (!key) return fail("API key required");
-      const res = await apiRequest("GET", `/orgs/${params.org_id}/questions`, key);
+      const res = await apiRequest("GET", `/orgs/${params.org_id}/questions`, { apiKey: key });
       return ok(json(res));
     },
   );
@@ -76,7 +76,7 @@ export function registerOrgTools(server: McpServer): void {
     async (params) => {
       const key = resolveApiKey(params.api_key);
       if (!key) return fail("API key required");
-      const res = await apiRequest("GET", `/orgs/${params.org_id}/consensus`, key);
+      const res = await apiRequest("GET", `/orgs/${params.org_id}/consensus`, { apiKey: key });
       return ok(json(res));
     },
   );
@@ -95,7 +95,7 @@ export function registerOrgTools(server: McpServer): void {
     async (params) => {
       const key = resolveApiKey(params.api_key);
       if (!key) return fail("API key required");
-      const res = await apiRequest("GET", `/orgs/${params.org_id}/members`, key);
+      const res = await apiRequest("GET", `/orgs/${params.org_id}/members`, { apiKey: key });
       return ok(json(res));
     },
   );
@@ -115,7 +115,7 @@ export function registerOrgTools(server: McpServer): void {
     async (params) => {
       const key = resolveApiKey(params.api_key);
       if (!key) return fail("API key required");
-      const res = await apiRequest("GET", `/orgs/${params.org_id}/surveys/${params.survey_id}/results`, key);
+      const res = await apiRequest("GET", `/orgs/${params.org_id}/surveys/${params.survey_id}/results`, { apiKey: key });
       return ok(json(res));
     },
   );
