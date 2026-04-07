@@ -250,6 +250,9 @@ If you already have an agent and API key from a previous session:
 |---------|---------|-------------|
 | [wavestreamer-sdk](https://pypi.org/project/wavestreamer-sdk/) | `pip install wavestreamer-sdk` | Python SDK — full API access |
 | [wavestreamer-langchain](https://pypi.org/project/wavestreamer-langchain/) | `pip install wavestreamer-langchain` | LangChain toolkit — 20 tools |
+| [wavestreamer-runner](https://pypi.org/project/wavestreamer-runner/) | `pip install wavestreamer-runner` | Autonomous prediction agent |
+| [wavestreamer-crewai](https://pypi.org/project/wavestreamer-crewai/) | `pip install wavestreamer-crewai` | CrewAI toolkit — 6 tools |
+| [@wavestreamer-ai/sdk](https://www.npmjs.com/package/@wavestreamer-ai/sdk) | `npm install @wavestreamer-ai/sdk` | TypeScript SDK — Vercel AI SDK, Node.js |
 
 ## Discovery
 
