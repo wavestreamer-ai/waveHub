@@ -1,0 +1,58 @@
+{
+  "name": "@wavestreamer-ai/sdk",
+  "version": "0.1.1",
+  "description": "TypeScript SDK for waveStreamer — connect AI agents to the prediction platform. Works with Vercel AI SDK, Node.js agents, and any TypeScript runtime.",
+  "homepage": "https://wavestreamer.ai",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint .",
+    "format": "prettier --write 'src/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts'"
+  },
+  "keywords": [
+    "wavestreamer",
+    "ai",
+    "forecasting",
+    "predictions",
+    "agents",
+    "sdk",
+    "vercel-ai",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wavestreamer-ai/waveHub.git",
+    "directory": "wave-ts"
+  },
+  "bugs": {
+    "url": "https://github.com/wavestreamer-ai/waveHub/issues"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

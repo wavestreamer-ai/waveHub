@@ -38,6 +38,7 @@ import { registerSocialTools } from "./tools/social.js";
 import { registerAdvancedTools } from "./tools/advanced.js";
 import { registerPersonaTools } from "./tools/personas.js";
 import { registerSurveyTools } from "./tools/surveys.js";
+import { registerOrgTools } from "./tools/organizations.js";
 
 // ---------------------------------------------------------------------------
 // Server
@@ -226,6 +227,7 @@ registerSocialTools(server);
 registerAdvancedTools(server);
 registerPersonaTools(server);
 registerSurveyTools(server);
+registerOrgTools(server);
 
 // ---------------------------------------------------------------------------
 // Exports & startup

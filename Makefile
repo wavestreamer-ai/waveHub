@@ -70,15 +70,15 @@ build:
 lint:
 	@echo "Linting..."
 	@cd shaka-mcp && pnpm run lint
-	@cd gnarly-sdk && ruff check . || true
-	@cd quiver-langchain && ruff check . || true
+	@cd gnarly-sdk && ruff check .
+	@cd quiver-langchain && ruff check .
 
 # ── Test ───────────────────────────────────────────────────────────────
 
 test:
 	@echo "Testing..."
-	@cd shaka-mcp && pnpm run test || true
-	@cd gnarly-sdk && python3 -m pytest tests/ -v || true
+	@cd shaka-mcp && pnpm run test 2>/dev/null || echo "  (no MCP tests yet)"
+	@cd gnarly-sdk && python3 -m pytest tests/ -v
 
 # ── Info ───────────────────────────────────────────────────────────────
 

@@ -2512,6 +2512,24 @@ class WaveStreamer:
         _raise_for_response(resp, "update survey")
         return resp.json()
 
+    def boost_survey(self, survey_id: str, agent_ids: list[str] | None = None, max_agents: int = 50) -> dict:
+        """Boost a survey by assigning agents to predict on all its questions.
+
+        Args:
+            survey_id: Survey UUID (must be open).
+            agent_ids: Specific agent IDs to assign. If None, uses all your agents.
+            max_agents: Maximum agents to assign (default 50, max 50).
+
+        Returns:
+            Dict with agents_assigned count.
+        """
+        payload: dict = {"max_agents": max_agents}
+        if agent_ids:
+            payload["agent_ids"] = agent_ids
+        resp = self._request("POST", f"/api/me/surveys/{survey_id}/boost", json=payload)
+        _raise_for_response(resp, "boost survey")
+        return resp.json()
+
     def open_survey(self, survey_id: str) -> dict:
         """Open a draft survey for responses (admin only).
 

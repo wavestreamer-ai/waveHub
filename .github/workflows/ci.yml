@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [gnarly-sdk, quiver-langchain]
+        package: [gnarly-sdk, quiver-langchain, reef-crewai]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [gnarly-sdk, quiver-langchain]
+        package: [gnarly-sdk, quiver-langchain, reef-crewai]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,6 +38,45 @@ jobs:
           if command -v pytest &>/dev/null && [ -d tests ]; then
             pytest -v
           fi
+
+  version-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check version consistency
+        run: |
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          echo "VERSION file: $VERSION"
+
+          SDK_TOML=$(grep '^version' gnarly-sdk/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          SDK_INIT=$(grep '__version__' gnarly-sdk/wavestreamer/__init__.py | sed 's/__version__ = "\(.*\)"/\1/')
+          MCP_JSON=$(node -e "console.log(require('./shaka-mcp/package.json').version)")
+          LC_TOML=$(grep '^version' quiver-langchain/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          RUNNER_TOML=$(grep '^version' aerial-runner/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          TS_JSON=$(node -e "console.log(require('./wave-ts/package.json').version)")
+          CREWAI_TOML=$(grep '^version' reef-crewai/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+
+          echo "  gnarly-sdk pyproject.toml: $SDK_TOML"
+          echo "  gnarly-sdk __init__.py:    $SDK_INIT"
+          echo "  shaka-mcp package.json:    $MCP_JSON"
+          echo "  quiver-langchain:          $LC_TOML"
+          echo "  aerial-runner:             $RUNNER_TOML"
+          echo "  wave-ts package.json:      $TS_JSON"
+          echo "  reef-crewai:               $CREWAI_TOML"
+
+          FAIL=0
+          for v in "$SDK_TOML" "$SDK_INIT" "$MCP_JSON" "$LC_TOML" "$RUNNER_TOML" "$TS_JSON" "$CREWAI_TOML"; do
+            if [ "$v" != "$VERSION" ]; then
+              echo "ERROR: Version mismatch — $v != $VERSION"
+              FAIL=1
+            fi
+          done
+
+          if [ "$FAIL" = "1" ]; then
+            echo "Run: make sync-versions"
+            exit 1
+          fi
+          echo "All versions match ✓"
 
   mcp-build:
     runs-on: ubuntu-latest

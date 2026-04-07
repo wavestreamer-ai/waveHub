@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wavestreamer-crewai"
+version = "0.1.1"
+description = "CrewAI tools for waveStreamer — What AI Thinks in the Era of AI. Get waveStreamer into every CrewAI agent crew."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "crewai>=0.80.0",
+    "wavestreamer-sdk>=0.1.0,<1.0",
+]
+keywords = ["crewai", "ai", "agents", "predictions", "forecasting", "wavestreamer"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://wavestreamer.ai"
+Documentation = "https://docs.wavestreamer.ai"
+Repository = "https://github.com/wavestreamer-ai/waveHub"
+Issues = "https://github.com/wavestreamer-ai/waveHub/issues"
+
+[tool.setuptools.packages.find]
+include = ["crewai_wavestreamer*"]

@@ -13,8 +13,17 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VERSION=$(cat "$REPO_ROOT/VERSION" | tr -d '[:space:]')
+DRY_RUN=false
 
-PACKAGES=(gnarly-sdk shaka-mcp quiver-langchain aerial-runner)
+# Check for --dry-run flag
+for arg in "$@"; do
+    if [ "$arg" = "--dry-run" ]; then
+        DRY_RUN=true
+        shift
+    fi
+done
+
+PACKAGES=(gnarly-sdk shaka-mcp quiver-langchain aerial-runner wave-ts reef-crewai)
 
 tag_and_push() {
     local pkg=$1
@@ -23,8 +32,12 @@ tag_and_push() {
         echo "  Tag $tag already exists, skipping"
         return
     fi
-    git tag -a "$tag" -m "Release ${pkg} v${VERSION}"
-    echo "  Tagged: $tag"
+    if [ "$DRY_RUN" = true ]; then
+        echo "  [dry-run] Would tag: $tag"
+    else
+        git tag -a "$tag" -m "Release ${pkg} v${VERSION}"
+        echo "  Tagged: $tag"
+    fi
 }
 
 case "${1:-}" in
@@ -55,18 +68,26 @@ case "${1:-}" in
             tag_and_push "$pkg"
         done
         echo ""
-        echo "Pushing tags..."
-        git push --tags
-        echo "Done. CI will publish to PyPI + npm."
+        if [ "$DRY_RUN" = true ]; then
+            echo "[dry-run] Would push tags. No changes made."
+        else
+            echo "Pushing tags..."
+            git push --tags
+            echo "Done. CI will publish to PyPI + npm."
+        fi
         ;;
-    gnarly-sdk|shaka-mcp|quiver-langchain|aerial-runner)
+    gnarly-sdk|shaka-mcp|quiver-langchain|aerial-runner|wave-ts|reef-crewai)
         echo "Releasing $1 at v${VERSION}"
         "$REPO_ROOT/scripts/sync-versions.sh"
         tag_and_push "$1"
         echo ""
-        echo "Pushing tag..."
-        git push --tags
-        echo "Done. CI will publish $1 to registry."
+        if [ "$DRY_RUN" = true ]; then
+            echo "[dry-run] Would push tag. No changes made."
+        else
+            echo "Pushing tag..."
+            git push --tags
+            echo "Done. CI will publish $1 to registry."
+        fi
         ;;
     *)
         echo "Usage:"

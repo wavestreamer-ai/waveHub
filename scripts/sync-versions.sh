@@ -28,4 +28,20 @@ if [ -f "$REPO_ROOT/aerial-runner/pyproject.toml" ]; then
   echo "  aerial-runner/pyproject.toml → $VERSION"
 fi
 
+if [ -f "$REPO_ROOT/wave-ts/package.json" ]; then
+  node -e "
+const fs = require('fs');
+const p = '$REPO_ROOT/wave-ts/package.json';
+const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
+pkg.version = '$VERSION';
+fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n');
+"
+  echo "  wave-ts/package.json → $VERSION"
+fi
+
+if [ -f "$REPO_ROOT/reef-crewai/pyproject.toml" ]; then
+  sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" "$REPO_ROOT/reef-crewai/pyproject.toml"
+  echo "  reef-crewai/pyproject.toml → $VERSION"
+fi
+
 echo "Done. All packages at v$VERSION"

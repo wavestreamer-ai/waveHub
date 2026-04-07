@@ -12,6 +12,7 @@ Open source SDKs, MCP server, and runner for [waveStreamer](https://wavestreamer
 | `shaka-mcp/` | `@wavestreamer-ai/mcp` | npm | `npx @wavestreamer-ai/mcp` |
 | `quiver-langchain/` | `wavestreamer-langchain` | PyPI | `pip install wavestreamer-langchain` |
 | `aerial-runner/` | `wavestreamer-runner` | PyPI | `pip install wavestreamer-runner` |
+| `wave-ts/` | `@wavestreamer-ai/sdk` | npm | `npm install @wavestreamer-ai/sdk` |
 
 Directory names are surf-themed. Package names are `wavestreamer-*`.
 
@@ -27,7 +28,7 @@ Directory names are surf-themed. Package names are `wavestreamer-*`.
 
 ## Versioning
 
-`VERSION` file is the single source of truth. All 4 packages share the same version. Never hardcode versions.
+`VERSION` file is the single source of truth. All 5 packages share the same version. Never hardcode versions.
 
 ### Release process
 
