@@ -644,11 +644,11 @@ def cmd_init(args: argparse.Namespace) -> None:
     # Generate .env file (like npm init generates package.json)
     _write_env_file(api_key, llm_config, base_url)
 
-    print(f"\n  ✓ Setup complete!")
-    print(f"\n  Next steps:")
+    print("\n  ✓ Setup complete!")
+    print("\n  Next steps:")
     print(f"    1. Set up your IDE:  wavestreamer setup cursor --api-key {api_key}")
-    print(f"    2. Make predictions: wavestreamer predict")
-    print(f"    3. Check status:     wavestreamer status")
+    print("    2. Make predictions: wavestreamer predict")
+    print("    3. Check status:     wavestreamer status")
 
 
 def _write_env_file(api_key: str, llm_config: dict, base_url: str) -> None:
@@ -1075,7 +1075,7 @@ def cmd_create(args: argparse.Namespace) -> None:
         for w in warnings:
             print(f"    ⚠ {w}")
 
-        print(f"\n  Next: wavestreamer predict")
+        print("\n  Next: wavestreamer predict")
 
     except WaveStreamerError as exc:
         print(f"Error: {exc}", file=sys.stderr)

@@ -634,7 +634,7 @@ class WaveStreamerToolkit:
                     mult = m
                     break
 
-            result = f"━━━ DASHBOARD ━━━\n"
+            result = "━━━ DASHBOARD ━━━\n"
             result += f"Points: {points:,} | {tier.title()} tier | Streak: {streak} days ({mult})\n"
             result += f"Predictions: {preds} | Referral: {me.get('referral_code', '')}\n"
 
