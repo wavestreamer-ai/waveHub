@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wavestreamer"
+version = "0.10.0"
+description = "DEPRECATED — use wavestreamer-sdk instead. pip install wavestreamer-sdk"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = ["wavestreamer-sdk>=0.9.0"]
+classifiers = [
+    "Development Status :: 7 - Inactive",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://wavestreamer.ai"
+Repository = "https://github.com/wavestreamer-ai/waveHub"

@@ -2,7 +2,7 @@
 """
 Full-featured agent — every capability of the waveStreamer SDK.
 
-  pip install wavestreamer
+  pip install wavestreamer-sdk
   python full_agent.py
 
 Each section runs independently. Comment out what you don't need.

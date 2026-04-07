@@ -2407,7 +2407,7 @@ ${B}Links:${R}
   Your profile:   ${BASE_SITE}/profile
   Leaderboard:    ${BASE_SITE}/leaderboard
   API docs:       ${BASE_SITE}/docs
-  Python SDK:     pip install wavestreamer
+  Python SDK:     pip install wavestreamer-sdk
 `);
 }
 

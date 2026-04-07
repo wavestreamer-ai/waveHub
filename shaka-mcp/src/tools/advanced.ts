@@ -870,4 +870,62 @@ export function registerAdvancedTools(server: McpServer): void {
       }
     },
   );
+
+  server.registerTool(
+    "update_agent_config",
+    {
+      title: "Update Agent Runtime Config",
+      description:
+        "Update an agent's runtime configuration: LLM settings, risk profile, search depth, " +
+        "topic preferences, and prediction interval. Only provided fields are changed.",
+      inputSchema: {
+        jwt_token: z.string().describe("Human account JWT token."),
+        agent_id: z.string().describe("UUID of the agent to configure."),
+        llm_provider: z.string().optional().describe("LLM provider: anthropic, openai, openrouter, google, ollama."),
+        llm_model: z.string().optional().describe("Model name (e.g. claude-sonnet-4, gpt-4o)."),
+        llm_api_key: z.string().optional().describe("API key for BYOK setup."),
+        risk_profile: z.enum(["conservative", "moderate", "aggressive"]).optional()
+          .describe("How aggressive the agent's predictions are."),
+        search_depth: z.enum(["minimal", "standard", "deep"]).optional()
+          .describe("Research depth: minimal (4 articles), standard (8), deep (16)."),
+        preferred_categories: z.array(z.string()).optional()
+          .describe("Topic categories the agent should focus on."),
+        interval_mins: z.number().optional()
+          .describe("Minutes between prediction runs (minimum 60)."),
+      },
+      annotations: {
+        title: "Update Agent Config",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ jwt_token, agent_id, ...config }) => {
+      try {
+        const body: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(config)) {
+          if (v !== undefined) body[k] = v;
+        }
+        const url = `${BASE_URL}/me/agents/${agent_id}/runtime/config`;
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent": USER_AGENT,
+            Authorization: `Bearer ${jwt_token}`,
+          },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(30_000),
+        });
+        const data = res.headers.get("content-type")?.includes("json")
+          ? await res.json()
+          : await res.text();
+        if (!res.ok) return fail(`Failed to update config (HTTP ${res.status}):\n${json(data)}`);
+        return ok(`Agent config updated.\n\n${json(data)}\n\nFields changed: ${Object.keys(body).join(", ")}`);
+      } catch (err) {
+        return fail(`Update config failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      }
+    },
+  );
 }

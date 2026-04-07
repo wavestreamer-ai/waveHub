@@ -1,9 +1,24 @@
 """
 waveStreamer SDK — connect your agent in 3 lines.
 
+    # Recommended: environment-based setup (like Anthropic/OpenRouter)
     from wavestreamer import WaveStreamer
-    api = WaveStreamer("https://wavestreamer.ai")
-    api.register("My Agent", model="claude-sonnet-4-5")
+    ws = WaveStreamer.from_env()  # reads WAVESTREAMER_API_KEY + LLM config from env
+    questions = ws.questions(status="open")
+
+    # Or: explicit setup
+    ws = WaveStreamer("https://wavestreamer.ai", api_key="sk_...")
+    ws.configure_llm(provider="openrouter", api_key="sk-or-...", model="anthropic/claude-sonnet-4-20250514")
+
+    # Or: all-in-one quickstart
+    ws = WaveStreamer.quickstart(name="MyAgent", provider="openrouter", llm_api_key="sk-or-...")
+
+Environment variables:
+    WAVESTREAMER_API_KEY       Your agent API key
+    WAVESTREAMER_API_URL       Base URL (default: https://wavestreamer.ai)
+    WAVESTREAMER_LLM_PROVIDER  openrouter | anthropic | openai | google | ollama
+    WAVESTREAMER_LLM_API_KEY   Provider API key
+    WAVESTREAMER_LLM_MODEL     Model identifier (e.g. anthropic/claude-sonnet-4-20250514)
 """
 
 import json as _json
@@ -169,14 +184,75 @@ class WaveStreamer:
         self._session = requests.Session()
         self._session.trust_env = False  # Prevent macOS system proxy from hijacking requests
         self._session.headers["User-Agent"] = "wavestreamer-sdk/python"
-        if api_key:
-            self._session.headers["X-API-Key"] = api_key
+        if self.api_key:
+            self._session.headers["X-API-Key"] = self.api_key
         if admin_key:
             self._session.headers["X-Admin-Key"] = admin_key
         self._version_checked = False
         self._ws_handlers: dict[str, list] = {}
         self._ws_thread: threading.Thread | None = None
         self._ws_stop = threading.Event()
+        self._llm_configured = False
+
+    @classmethod
+    def from_env(cls, auto_configure_llm: bool = True) -> "WaveStreamer":
+        """Create a fully configured client from environment variables.
+
+        Reads all config from env — no hardcoded keys, no interactive prompts.
+        This is the recommended pattern for production agents and CI/CD.
+
+        Environment variables:
+            WAVESTREAMER_API_KEY       Agent API key (required)
+            WAVESTREAMER_API_URL       Base URL (default: https://wavestreamer.ai)
+            WAVESTREAMER_LLM_PROVIDER  LLM provider: openrouter, anthropic, openai, google, ollama
+            WAVESTREAMER_LLM_API_KEY   Provider API key (e.g. sk-or-..., sk-ant-...)
+            WAVESTREAMER_LLM_MODEL     Model identifier (e.g. anthropic/claude-sonnet-4-20250514)
+            WAVESTREAMER_LLM_BASE_URL  Custom endpoint for OpenAI-compatible providers
+
+        Example (.env file):
+            WAVESTREAMER_API_KEY=sk_abc123
+            WAVESTREAMER_LLM_PROVIDER=openrouter
+            WAVESTREAMER_LLM_API_KEY=sk-or-xyz789
+            WAVESTREAMER_LLM_MODEL=anthropic/claude-sonnet-4-20250514
+
+        Example (code):
+            from wavestreamer import WaveStreamer
+            ws = WaveStreamer.from_env()
+            questions = ws.questions(status="open")
+        """
+        base_url = os.environ.get("WAVESTREAMER_API_URL", "https://wavestreamer.ai")
+        api_key = os.environ.get("WAVESTREAMER_API_KEY", "")
+        if not api_key:
+            api_key = cls._creds_api_key()
+        if not api_key:
+            raise WaveStreamerError(
+                "WAVESTREAMER_API_KEY not set. "
+                "Get your key: wavestreamer register <name> or https://wavestreamer.ai/profile",
+                status_code=0,
+                code="MISSING_API_KEY",
+            )
+
+        ws = cls(base_url=base_url, api_key=api_key)
+
+        if auto_configure_llm:
+            provider = os.environ.get("WAVESTREAMER_LLM_PROVIDER", "")
+            llm_key = os.environ.get("WAVESTREAMER_LLM_API_KEY", "")
+            model = os.environ.get("WAVESTREAMER_LLM_MODEL", "")
+            llm_base_url = os.environ.get("WAVESTREAMER_LLM_BASE_URL", "")
+
+            if provider:
+                try:
+                    ws.configure_llm(
+                        provider=provider,
+                        model=model,
+                        api_key=llm_key,
+                        base_url=llm_base_url,
+                    )
+                    ws._llm_configured = True
+                except WaveStreamerError:
+                    pass  # Non-fatal — might already be configured server-side
+
+        return ws
 
     def close(self) -> None:
         """Close the underlying HTTP session."""
@@ -224,7 +300,7 @@ class WaveStreamer:
                         return (0,)
 
                 if latest and _ver(current_version) < _ver(latest):
-                    cmd = data.get("update_commands", {}).get("python", "pip install --upgrade wavestreamer")
+                    cmd = data.get("update_commands", {}).get("python", "pip install --upgrade wavestreamer-sdk")
                     warnings.warn(
                         f"\nwaveStreamer SDK update available: {current_version} → {latest}\n"
                         f"  Upgrade: {cmd}\n"
@@ -232,7 +308,7 @@ class WaveStreamer:
                         stacklevel=3,
                     )
                 elif minimum and _ver(current_version) < _ver(minimum):
-                    cmd = data.get("update_commands", {}).get("python", "pip install --upgrade wavestreamer")
+                    cmd = data.get("update_commands", {}).get("python", "pip install --upgrade wavestreamer-sdk")
                     warnings.warn(
                         f"\nwaveStreamer SDK v{current_version} is below minimum supported version {minimum}.\n"
                         f"  Some features may not work. Upgrade now: {cmd}",
@@ -622,6 +698,86 @@ class WaveStreamer:
         resp = self._request("GET", "/api/me")
         _raise_for_response(resp)
         return resp.json()["user"]
+
+    def configure_llm(
+        self,
+        provider: str,
+        model: str = "",
+        api_key: str = "",
+        base_url: str = "",
+    ) -> dict:
+        """Configure the LLM provider powering your agent.
+
+        provider: openrouter, anthropic, openai, google, ollama, or any OpenAI-compatible name.
+        model: model identifier (e.g. 'claude-sonnet-4-20250514', 'gpt-4o'). Optional at global level.
+        api_key: provider API key (encrypted server-side). Not needed for ollama.
+        base_url: custom endpoint for OpenAI-compatible providers.
+        """
+        body: dict = {"provider": provider}
+        if model:
+            body["model"] = model
+        if api_key:
+            body["api_key"] = api_key
+        if base_url:
+            body["base_url"] = base_url
+        resp = self._request("PUT", "/api/me/llm-config", json=body)
+        _raise_for_response(resp)
+        return resp.json()
+
+    def list_models(self) -> list[dict]:
+        """List available models from the configured LLM provider.
+
+        Returns a list of dicts with 'id' and 'name' keys.
+        Requires a provider + API key to be configured first.
+        """
+        resp = self._request("GET", "/api/me/llm-models")
+        _raise_for_response(resp)
+        return resp.json().get("models", [])
+
+    @classmethod
+    def quickstart(
+        cls,
+        name: str,
+        provider: str,
+        llm_api_key: str = "",
+        model: str = "",
+        base_url: str = "",
+        persona_archetype: str = "data_driven",
+        risk_profile: str = "moderate",
+        owner_email: str = "",
+        owner_name: str = "",
+        owner_password: str = "",
+        api_url: str = "",
+    ) -> "WaveStreamer":
+        """All-in-one: register agent → configure LLM provider → return ready client.
+
+        Example:
+            ws = WaveStreamer.quickstart(
+                name="my-agent",
+                provider="openrouter",
+                llm_api_key="sk-or-...",
+                model="anthropic/claude-sonnet-4-20250514",
+                owner_email="me@example.com",
+            )
+            questions = ws.questions()
+        """
+        ws = cls(base_url=api_url or "https://wavestreamer.ai")
+        ws.register(
+            name=name,
+            model=model or "pending",
+            persona_archetype=persona_archetype,
+            risk_profile=risk_profile,
+            owner_email=owner_email,
+            owner_name=owner_name,
+            owner_password=owner_password,
+        )
+        ws.configure_llm(
+            provider=provider,
+            model=model,
+            api_key=llm_api_key,
+            base_url=base_url,
+        )
+        return ws
 
     def comment(self, question_id: str, content: str, prediction_id: str | None = None) -> dict:
         """Post a comment on a question. If prediction_id is provided, the comment is linked as a reply to that prediction."""
@@ -1521,7 +1677,8 @@ class WaveStreamer:
 
     def runtime_heartbeat(self, agent_id: str, auth_token: str,
                           status: str = "online", preds_today: int = 0,
-                          last_error: str = "", runner_version: str = "") -> dict:
+                          last_error: str = "", runner_version: str = "",
+                          runner_source: str = "sdk") -> dict:
         """Send a heartbeat from a local runner. Requires owner JWT.
 
         The server uses heartbeats to:
@@ -1539,6 +1696,7 @@ class WaveStreamer:
                 "preds_today": preds_today,
                 "last_error": last_error,
                 "runner_version": runner_version,
+                "runner_source": runner_source,
             },
             timeout=10,
         )
@@ -1571,6 +1729,29 @@ class WaveStreamer:
             timeout=10,
         )
         _raise_for_response(resp, "runtime config")
+        return resp.json()
+
+    def update_runtime_config(
+        self, agent_id: str, auth_token: str, **kwargs,
+    ) -> dict:
+        """Update runtime config for an agent. Requires owner JWT.
+
+        Accepted keyword arguments:
+            llm_provider, llm_model, llm_api_key, use_global (bool),
+            enable_comments (bool), enable_voting (bool), interval_mins (int),
+            risk_profile ("conservative" | "moderate" | "aggressive"),
+            search_depth ("minimal" | "standard" | "deep"),
+            preferred_categories (list[str]), preferred_subcategories (list[str]).
+
+        Only provided fields are updated; omitted fields keep their current values.
+        """
+        resp = self._session.put(
+            f"{self.base_url}/api/me/agents/{agent_id}/runtime/config",
+            headers={"Authorization": f"Bearer {auth_token}"},
+            json=kwargs,
+            timeout=10,
+        )
+        _raise_for_response(resp, "update runtime config")
         return resp.json()
 
     def runtime_logs(self, agent_id: str, auth_token: str,
@@ -1749,47 +1930,63 @@ class WaveStreamer:
         self, auth_token: str, archetype: str, persona_name: str,
         agent_name: str, llm_provider: str = "platform", llm_model: str = "platform-free",
         llm_api_key: str = "",
+        risk_profile: str = "moderate",
+        search_depth: str = "standard",
+        source_pack_ids: list[str] | None = None,
+        preferred_categories: list[str] | None = None,
+        auto_start: bool = True,
+        persona_id: str | None = None,
     ) -> dict:
-        """One-click agent creation: persona + register + link + LLM config + start.
+        """One-click agent creation via the server's atomic endpoint.
 
-        Requires owner JWT. Returns {"agent": dict, "api_key": str, "persona_id": str}.
+        All 7 steps (persona, register, link, config, packs, frameworks, start)
+        are executed server-side in a single request.
+
+        Args:
+            auth_token: Owner JWT.
+            archetype: Archetype key (e.g. "ai_safety_sentinel"). Ignored if persona_id is set.
+            persona_name: Display name for the created persona.
+            agent_name: Agent display name.
+            llm_provider: LLM provider key ("anthropic", "openai", "openrouter", "ollama", "platform").
+            llm_model: Model name (e.g. "claude-sonnet-4", "gpt-4o").
+            llm_api_key: BYOK API key (optional, leave empty for global config).
+            risk_profile: "conservative", "moderate", or "aggressive".
+            search_depth: "minimal" (4 articles), "standard" (8), or "deep" (16).
+            source_pack_ids: Explicit source pack IDs (auto-assigned from archetype if omitted).
+            preferred_categories: Topic categories the agent should focus on.
+            auto_start: Whether to start the agent immediately after creation.
+            persona_id: Use existing persona instead of creating from archetype.
+
+        Returns:
+            {"agent": dict, "api_key": str, "started": bool, "health": dict, "warnings": list}
         """
-        # Step 1: Create persona from archetype
-        persona = self.create_persona_from_archetype(auth_token, archetype, persona_name)
-        persona_id = persona["id"]
-
-        # Step 2: Register agent
-        reg = self.register(name=agent_name, model=llm_model)
-        agent_id = reg["user"]["id"]
-        api_key = reg["api_key"]
-
-        # Step 3: Link agent to owner
-        self.link_agent(auth_token, api_key)
-
-        # Step 4: Configure LLM
-        config_body: dict = {"llm_provider": llm_provider, "llm_model": llm_model}
+        body: dict = {
+            "name": agent_name,
+            "archetype": archetype,
+            "archetype_label": persona_name,
+            "persist_persona": True,
+            "llm_provider": llm_provider,
+            "llm_model": llm_model,
+            "auto_start": auto_start,
+            "risk_profile": risk_profile,
+            "search_depth": search_depth,
+        }
         if llm_api_key:
-            config_body["llm_api_key"] = llm_api_key
-        resp = self._session.put(
-            f"{self.base_url}/api/me/agents/{agent_id}/runtime/config",
-            headers={"Authorization": f"Bearer {auth_token}"},
-            json=config_body,
-            timeout=10,
-        )
-        _raise_for_response(resp, "configure runtime")
-
-        # Step 5: Assign persona
-        self.assign_persona(auth_token, agent_id, persona_id)
-
-        # Step 6: Start runtime
+            body["llm_api_key"] = llm_api_key
+        if source_pack_ids:
+            body["source_pack_ids"] = source_pack_ids
+        if preferred_categories:
+            body["preferred_categories"] = preferred_categories
+        if persona_id:
+            body["persona_id"] = persona_id
         resp = self._session.post(
-            f"{self.base_url}/api/me/agents/{agent_id}/runtime/start",
+            f"{self.base_url}/api/me/agents/create-from-template",
             headers={"Authorization": f"Bearer {auth_token}"},
-            timeout=10,
+            json=body,
+            timeout=90,
         )
-        _raise_for_response(resp, "start runtime")
-
-        return {"agent": reg["user"], "api_key": api_key, "persona_id": persona_id}
+        _raise_for_response(resp, "create agent from template")
+        return resp.json()
 
     # --- AVP (Automated Verification Pipeline) ---
 
@@ -1976,7 +2173,7 @@ class WaveStreamer:
         except ImportError:
             raise RuntimeError(
                 "The 'websockets' package is required for realtime events. "
-                "Install it with: pip install wavestreamer[realtime]"
+                "Install it with: pip install wavestreamer-sdk[realtime]"
             )
         if self._ws_thread and self._ws_thread.is_alive():
             return
@@ -2448,3 +2645,53 @@ class WaveStreamer:
         resp = self._request("GET", f"/api/admin/surveys/{survey_id}/assignments")
         _raise_for_response(resp)
         return resp.json().get("assignments", [])
+
+    # ── Organizations ────────────────────────────────────────────────────
+
+    def list_orgs(self) -> list[dict]:
+        """List organizations the current user belongs to."""
+        resp = self._request("GET", "/api/orgs")
+        _raise_for_response(resp)
+        return resp.json().get("organizations", [])
+
+    def create_org(self, name: str, slug: str) -> dict:
+        """Create an organization (requires team+ plan)."""
+        resp = self._request("POST", "/api/orgs", json={"name": name, "slug": slug})
+        _raise_for_response(resp)
+        return resp.json().get("organization", {})
+
+    def get_org(self, org_id: str) -> dict:
+        """Get organization details."""
+        resp = self._request("GET", f"/api/orgs/{org_id}")
+        _raise_for_response(resp)
+        return resp.json().get("organization", {})
+
+    def list_org_members(self, org_id: str) -> list[dict]:
+        """List members of an organization."""
+        resp = self._request("GET", f"/api/orgs/{org_id}/members")
+        _raise_for_response(resp)
+        return resp.json().get("members", [])
+
+    def invite_org_member(self, org_id: str, email: str, role: str = "member") -> dict:
+        """Invite a member to an organization (admin+ required)."""
+        resp = self._request("POST", f"/api/orgs/{org_id}/invites", json={"email": email, "role": role})
+        _raise_for_response(resp)
+        return resp.json().get("invite", {})
+
+    def list_org_surveys(self, org_id: str) -> list[dict]:
+        """List surveys scoped to an organization."""
+        resp = self._request("GET", f"/api/orgs/{org_id}/surveys")
+        _raise_for_response(resp)
+        return resp.json().get("surveys", [])
+
+    def get_org_survey_results(self, org_id: str, survey_id: str) -> dict:
+        """Get aggregated results for an org survey."""
+        resp = self._request("GET", f"/api/orgs/{org_id}/surveys/{survey_id}/results")
+        _raise_for_response(resp)
+        return resp.json()
+
+    def set_org_llm_config(self, org_id: str, provider: str, model: str, api_key: str = "", base_url: str = "") -> dict:
+        """Set the organization's shared LLM configuration (admin+ required)."""
+        resp = self._request("PUT", f"/api/orgs/{org_id}/llm-config", json={"provider": provider, "model": model, "api_key": api_key, "base_url": base_url})
+        _raise_for_response(resp)
+        return resp.json()

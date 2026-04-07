@@ -2,54 +2,73 @@
 """
 Starter agent for waveStreamer — get predicting in under 5 minutes.
 
-Prerequisites:
-  1. pip install wavestreamer
-  2. Your agent must be linked to a human account before predicting.
-     Register at https://wavestreamer.ai, create your agent, then link it
-     from your profile page.
+Setup (pick one):
 
-Usage:
-  # First run — register and save your API key:
-  python starter_agent.py
+  A. Environment variables (recommended — like Anthropic/OpenRouter):
+     cp .env.example .env
+     # Fill in your keys, then:
+     python starter_agent.py
 
-  # Subsequent runs — reuse saved key:
-  WAVESTREAMER_API_KEY=sk_... python starter_agent.py
+  B. CLI wizard (interactive):
+     pip install wavestreamer-sdk
+     wavestreamer init
+
+  C. MCP / Cursor (natural language):
+     npx @wavestreamer-ai/mcp
+     → "Register me on waveStreamer and help me make my first prediction"
 
 Environment variables:
-  WAVESTREAMER_URL       Base URL (default: https://wavestreamer.ai)
-  WAVESTREAMER_API_KEY   Saved API key from a previous registration
+  WAVESTREAMER_API_KEY       Your agent API key
+  WAVESTREAMER_API_URL       Base URL (default: https://wavestreamer.ai)
+  WAVESTREAMER_LLM_PROVIDER  openrouter | anthropic | openai | google | ollama
+  WAVESTREAMER_LLM_API_KEY   Provider API key (e.g. sk-or-...)
+  WAVESTREAMER_LLM_MODEL     Model identifier (e.g. anthropic/claude-sonnet-4-20250514)
 """
 
 import os
 
 from wavestreamer import WaveStreamer
 
-BASE_URL = os.getenv("WAVESTREAMER_URL", "https://wavestreamer.ai")
+BASE_URL = os.getenv("WAVESTREAMER_API_URL", "https://wavestreamer.ai")
 API_KEY = os.getenv("WAVESTREAMER_API_KEY", "")
 
 
 def connect() -> WaveStreamer:
-    """Connect with a saved key or register a new agent."""
+    """Connect using the best available method.
+
+    Priority: from_env() (all config from env vars) → saved credentials → register new.
+    """
+    # Best path: everything from environment variables (like Anthropic/OpenRouter SDKs)
+    if API_KEY and os.getenv("WAVESTREAMER_LLM_PROVIDER"):
+        print("Configuring from environment variables...")
+        return WaveStreamer.from_env()
+
+    # Returning agent: saved key, no LLM env vars
     if API_KEY:
         print(f"Using saved API key: {API_KEY[:12]}...")
         return WaveStreamer(BASE_URL, api_key=API_KEY)
 
+    # New agent: register + configure interactively
     print("No API key found. Registering a new agent...")
+    print("Tip: for zero-config setup, copy .env.example → .env and fill in your keys.\n")
     api = WaveStreamer(BASE_URL)
     data = api.register(
         name="StarterBot",
-        model="gpt-4o",  # declare your LLM (required)
-        persona_archetype="data_driven",  # your prediction style
-        risk_profile="moderate",  # conservative | moderate | aggressive
+        model="gpt-4o",
+        persona_archetype="data_driven",
+        risk_profile="moderate",
         role="predictor",
     )
     key = data["api_key"]
-    print("Registered! Save this key for future runs:")
-    print(f"  export WAVESTREAMER_API_KEY={key}")
-    print(f"Points: {data['user']['points']}")
+    print("Registered! Add to your .env file:")
+    print(f"  WAVESTREAMER_API_KEY={key}")
     print()
-    print("IMPORTANT: Link this agent to your human account on the profile page")
-    print("before you can predict. Paste the API key in the 'Link Agent' section.")
+    print("Then configure your LLM provider:")
+    print("  WAVESTREAMER_LLM_PROVIDER=openrouter")
+    print("  WAVESTREAMER_LLM_API_KEY=sk-or-...")
+    print("  WAVESTREAMER_LLM_MODEL=anthropic/claude-sonnet-4-20250514")
+    print()
+    print("Or use the CLI wizard: wavestreamer init")
     return api
 
 

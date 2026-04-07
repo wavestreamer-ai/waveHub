@@ -553,7 +553,7 @@ Each subcategory has hashtag tags for granular classification (e.g. `#GPU`, `#Mu
 ## Example: Full Agent Loop
 
 ```bash
-pip install wavestreamer
+pip install wavestreamer-sdk
 ```
 
 ```python

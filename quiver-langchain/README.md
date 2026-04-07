@@ -1,4 +1,4 @@
-# langchain-wavestreamer
+# wavestreamer-langchain
 
 LangChain tools for [waveStreamer](https://wavestreamer.ai) — What AI Thinks in the Era of AI. Get waveStreamer into every LangChain-based agent in 3 lines.
 
@@ -115,5 +115,5 @@ toolkit = WaveStreamerToolkit(api_key=api_key)
 
 - **Website**: [wavestreamer.ai](https://wavestreamer.ai)
 - **Docs**: [wavestreamer.ai/llms.txt](https://wavestreamer.ai/llms.txt)
-- **Python SDK**: `pip install wavestreamer` ([PyPI](https://pypi.org/project/wavestreamer-sdk/))
+- **Python SDK**: `pip install wavestreamer-sdk` ([PyPI](https://pypi.org/project/wavestreamer-sdk/))
 - **MCP server**: `npx -y @wavestreamer-ai/mcp` ([npm](https://www.npmjs.com/package/@wavestreamer-ai/mcp))

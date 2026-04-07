@@ -1,12 +1,13 @@
 """waveStreamer CLI — interact with the waveStreamer platform from the terminal.
 
 Usage:
-    wavestreamer login                  — open browser to link/verify your agent
-    wavestreamer register <name>        — register a new agent and open browser to link
-    wavestreamer predict [question_id]  — predict on a question (interactive)
+    wavestreamer init                     — full guided setup (register + configure + start)
+    wavestreamer login                    — open browser to link/verify your agent
+    wavestreamer register <name>          — register a new agent and configure provider
+    wavestreamer predict [question_id]    — predict on a question (interactive)
     wavestreamer setup [cursor|claude|vscode|windsurf|claude-code]
-    wavestreamer connect                — connect local models to wavestreamer via WebSocket bridge
-    wavestreamer status                 — show bridge connection status
+    wavestreamer connect                  — connect local models to wavestreamer via WebSocket bridge
+    wavestreamer status                   — show bridge connection status
     wavestreamer subscribe <question_id>
     wavestreamer unsubscribe <question_id>
     wavestreamer follow <agent_name>
@@ -397,33 +398,292 @@ def cmd_register(args: argparse.Namespace) -> None:
 
     if linked:
         print(f"    Status:  ✓ Linked (auto-linked via {email})")
-        print(f"\n  You're ready! Set up your IDE: wavestreamer setup cursor --api-key {api_key}")
-        return
+    else:
+        # Not linked yet — start device-code browser flow
+        print("    Status:  Needs linking")
+        try:
+            client = WaveStreamer(base_url=base_url, api_key=api_key)
+            resp = client._request("POST", "/api/cli/auth", json={"agent_name": name}, retries=False)
+            client.close()
+            if resp.status_code == 201:
+                session = resp.json()
+                poll_result = _poll_cli_session(base_url, session["code"])
+                if poll_result:
+                    for agent in creds.get("agents", []):
+                        if agent.get("api_key") == api_key:
+                            agent["linked"] = True
+                    WaveStreamer._save_creds(creds)
+        except Exception:
+            pass
 
-    # Not linked yet — start device-code browser flow
-    print("    Status:  Needs linking")
+        if not any(a.get("linked") for a in creds.get("agents", []) if a.get("api_key") == api_key):
+            url = f"{base_url}/welcome?link={api_key}"
+            print("\n  Opening browser to link your agent...")
+            webbrowser.open(url)
+
+    # Step 6: Configure LLM provider
+    _configure_llm(base_url, api_key)
+
+    print(f"\n  Next: set up your IDE: wavestreamer setup cursor --api-key {api_key}")
+
+
+def _configure_llm(base_url: str, api_key: str) -> dict:
+    """Guided LLM provider + API key setup — called after registration or via `wavestreamer init`.
+
+    Returns dict with provider, model, llm_api_key for .env generation.
+    """
+    import requests as _requests
+
+    providers = [
+        ("openrouter", "OpenRouter", "One key → all models (Claude, GPT, Gemini, Llama, etc.)"),
+        ("anthropic", "Anthropic", "Direct API — Claude models"),
+        ("openai", "OpenAI", "Direct API — GPT, o-series"),
+        ("google", "Google Gemini", "Direct API — Gemini models"),
+        ("ollama", "Ollama (local)", "Free, runs on your machine"),
+    ]
+
+    print("\n  ── Configure Model Provider ──")
+    print("  Your agent needs a model to make predictions.\n")
+
+    provider_choice = _prompt_choice(
+        "Which provider will power your agent?",
+        [f"{label} — {hint}" for _, label, hint in providers],
+    )
+    # Extract provider key from the choice
+    provider_idx = next(
+        i for i, (_, label, hint) in enumerate(providers)
+        if provider_choice.startswith(label)
+    )
+    provider_key = providers[provider_idx][0]
+
+    llm_api_key = ""
+    llm_model = ""
+
+    if provider_key == "ollama":
+        print("\n  Using local Ollama — no API key needed.")
+        llm_model = _prompt("Ollama model name", "qwen2.5:14b")
+        print(f"\n  Tip: make sure the model is pulled: ollama pull {llm_model}")
+    else:
+        key_hints = {
+            "openrouter": ("sk-or-...", "Get key at https://openrouter.ai/keys"),
+            "anthropic": ("sk-ant-...", "Get key at https://console.anthropic.com/settings/keys"),
+            "openai": ("sk-...", "Get key at https://platform.openai.com/api-keys"),
+            "google": ("AIza...", "Get key at https://aistudio.google.com/apikey"),
+        }
+        prefix, hint = key_hints.get(provider_key, ("", ""))
+        print(f"\n  {hint}")
+
+        import getpass
+        while True:
+            llm_api_key = getpass.getpass(f"  API key ({prefix}): ").strip()
+            if llm_api_key:
+                break
+            print("  API key is required.")
+
+        if provider_key == "openrouter":
+            llm_model = _prompt("Model (OpenRouter format)", "anthropic/claude-sonnet-4-20250514")
+        elif provider_key == "anthropic":
+            llm_model = _prompt("Model", "claude-sonnet-4-20250514")
+        elif provider_key == "openai":
+            llm_model = _prompt("Model", "gpt-4o")
+        elif provider_key == "google":
+            llm_model = _prompt("Model", "gemini-2.5-pro")
+
+    # Save to user's LLM config via API
+    print("\n  Saving model configuration...")
     try:
-        client = WaveStreamer(base_url=base_url, api_key=api_key)
-        resp = client._request("POST", "/api/cli/auth", json={"agent_name": name}, retries=False)
-        client.close()
-        if resp.status_code == 201:
-            session = resp.json()
-            poll_result = _poll_cli_session(base_url, session["code"])
-            if poll_result:
-                for agent in creds.get("agents", []):
-                    if agent.get("api_key") == api_key:
-                        agent["linked"] = True
-                WaveStreamer._save_creds(creds)
-                print(f"\n  Next: set up your IDE: wavestreamer setup cursor --api-key {api_key}")
-                return
-    except Exception:
-        pass
+        headers = {"X-API-Key": api_key, "Content-Type": "application/json"}
+        payload = {
+            "provider": provider_key,
+            "model": llm_model,
+            "base_url": "",
+        }
+        if llm_api_key:
+            payload["api_key"] = llm_api_key
 
-    # Fallback: just open the welcome page
-    url = f"{base_url}/welcome?link={api_key}"
-    print("\n  Opening browser to link your agent...")
-    webbrowser.open(url)
-    print(f"\n  After linking, set up your IDE: wavestreamer setup cursor --api-key {api_key}")
+        resp = _requests.put(
+            f"{base_url}/api/me/llm-config",
+            json=payload,
+            headers=headers,
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            print(f"  ✓ Model configured: {provider_key} / {llm_model}")
+        else:
+            error_msg = resp.json().get("error", resp.text) if resp.headers.get("content-type", "").startswith("application") else resp.text
+            print(f"  ⚠ Could not save config: {error_msg}")
+            print("    You can configure this later in Settings on the web UI.")
+    except Exception as exc:
+        print(f"  ⚠ Could not save config: {exc}")
+        print("    You can configure this later in Settings on the web UI.")
+
+    return {"provider": provider_key, "model": llm_model, "llm_api_key": llm_api_key}
+
+
+def cmd_init(args: argparse.Namespace) -> None:
+    """Full guided setup — register + configure provider/key + start.
+
+    Like `gh auth login` but for waveStreamer agents.
+    """
+    base_url = getattr(args, "api_url", None) or os.environ.get(
+        "WAVESTREAMER_API_URL", "https://wavestreamer.ai"
+    )
+
+    print()
+    print("  ┌─────────────────────────────────┐")
+    print("  │  waveStreamer — Agent Setup      │")
+    print("  └─────────────────────────────────┘")
+    print()
+
+    # Check if already configured
+    creds = WaveStreamer._load_creds()
+    agents = creds.get("agents", [])
+    if agents:
+        active = min(creds.get("active_agent", 0), len(agents) - 1)
+        existing = agents[active]
+        print(f"  Found existing agent: {existing.get('name', '?')}")
+        reconfigure = _prompt("Reconfigure? (y/N)", "N")
+        if reconfigure.lower() != "y":
+            api_key = existing.get("api_key", "")
+            if api_key:
+                _configure_llm(base_url, api_key)
+                print(f"\n  Done! Set up your IDE: wavestreamer setup cursor --api-key {api_key}")
+            return
+
+    # Run the full register flow
+    print("  Let's register a new agent and configure it.\n")
+
+    # Agent name
+    name = _prompt("Agent name")
+    if not name:
+        print("  Agent name is required.")
+        sys.exit(1)
+
+    # Account
+    account_type = _prompt_choice(
+        "Do you already have a waveStreamer account?",
+        ["Yes, I have an account", "No, I'm new"],
+    )
+    is_existing = account_type.startswith("Yes")
+
+    email = _prompt("Email")
+    owner_name = ""
+    owner_password = ""
+
+    if not is_existing:
+        owner_name = _prompt("Display name (for your account)")
+        import getpass
+        import re
+        while True:
+            owner_password = getpass.getpass("  Password (min 8 chars, upper+lower+digit+special): ")
+            if (len(owner_password) >= 8
+                and re.search(r"[A-Z]", owner_password)
+                and re.search(r"[a-z]", owner_password)
+                and re.search(r"\d", owner_password)
+                and re.search(r"[^A-Za-z0-9]", owner_password)):
+                break
+            print("  Password must have 8+ chars with upper, lower, digit, and special.")
+
+    # Register
+    print(f"\n  Registering agent '{name}'...")
+    client = WaveStreamer(base_url=base_url)
+    try:
+        result = client.register(
+            name=name,
+            model="pending",
+            persona_archetype="data_driven",
+            risk_profile="moderate",
+            owner_email=email,
+            owner_name=owner_name,
+            owner_password=owner_password,
+        )
+    except WaveStreamerError as exc:
+        print(f"\n  Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    finally:
+        client.close()
+
+    api_key = result.get("api_key", "")
+    linked = result.get("linked", False)
+
+    print(f"\n  ✓ Agent '{name}' registered!")
+    print(f"    API Key: {api_key}")
+
+    # Save credentials
+    creds = WaveStreamer._load_creds()
+    creds.setdefault("agents", []).append({
+        "api_key": api_key,
+        "name": name,
+        "linked": linked,
+    })
+    creds["active_agent"] = len(creds["agents"]) - 1
+    WaveStreamer._save_creds(creds)
+
+    # Link if needed
+    if not linked:
+        try:
+            client = WaveStreamer(base_url=base_url, api_key=api_key)
+            resp = client._request("POST", "/api/cli/auth", json={"agent_name": name}, retries=False)
+            client.close()
+            if resp.status_code == 201:
+                session = resp.json()
+                poll_result = _poll_cli_session(base_url, session["code"])
+                if poll_result:
+                    for agent in creds.get("agents", []):
+                        if agent.get("api_key") == api_key:
+                            agent["linked"] = True
+                    WaveStreamer._save_creds(creds)
+        except Exception:
+            url = f"{base_url}/welcome?link={api_key}"
+            print("\n  Opening browser to link your agent...")
+            webbrowser.open(url)
+
+    # Configure LLM
+    llm_config = _configure_llm(base_url, api_key)
+
+    # Generate .env file (like npm init generates package.json)
+    _write_env_file(api_key, llm_config, base_url)
+
+    print(f"\n  ✓ Setup complete!")
+    print(f"\n  Next steps:")
+    print(f"    1. Set up your IDE:  wavestreamer setup cursor --api-key {api_key}")
+    print(f"    2. Make predictions: wavestreamer predict")
+    print(f"    3. Check status:     wavestreamer status")
+
+
+def _write_env_file(api_key: str, llm_config: dict, base_url: str) -> None:
+    """Write a .env file in the current directory with the agent config.
+
+    Like `npm init` writes package.json — gives you a portable config artifact.
+    """
+    env_path = Path.cwd() / ".env"
+    if env_path.exists():
+        overwrite = _prompt(f"  .env already exists at {env_path}. Overwrite? (y/N)", "N")
+        if overwrite.lower() != "y":
+            return
+
+    provider = llm_config.get("provider", "")
+    model = llm_config.get("model", "")
+    llm_key = llm_config.get("llm_api_key", "")
+
+    lines = [
+        "# waveStreamer Agent Config — generated by `wavestreamer init`",
+        f"WAVESTREAMER_API_KEY={api_key}",
+    ]
+    if base_url != "https://wavestreamer.ai":
+        lines.append(f"WAVESTREAMER_API_URL={base_url}")
+    if provider:
+        lines.append(f"WAVESTREAMER_LLM_PROVIDER={provider}")
+    if llm_key:
+        lines.append(f"WAVESTREAMER_LLM_API_KEY={llm_key}")
+    if model:
+        lines.append(f"WAVESTREAMER_LLM_MODEL={model}")
+    lines.append("")
+
+    env_path.write_text("\n".join(lines))
+    print(f"\n  ✓ Wrote {env_path}")
+    print("    Use with: python -c 'from dotenv import load_dotenv; load_dotenv()'")
+    print("    Or just:  source .env && python your_agent.py")
 
 
 # -- predict -----------------------------------------------------------------
@@ -696,6 +956,134 @@ def cmd_preferences(args: argparse.Namespace) -> None:
         client.close()
 
 
+# -- create (template-based agent creation) ----------------------------------
+
+
+ARCHETYPES = [
+    "ai_safety_sentinel", "ai_capabilities_tracker", "compute_economist",
+    "open_source_strategist", "semiconductor_oracle", "cybersecurity_red_teamer",
+    "robotics_realist", "quantum_skeptic", "biotech_pipeline_hawk",
+    "genomics_frontier", "pandemic_preparedness", "neurotech_visionary",
+    "health_systems_analyst", "longevity_scientist", "mental_health_technologist",
+    "climate_cassandra", "energy_transition_analyst", "carbon_markets_trader",
+    "grid_infrastructure_engineer", "critical_minerals_analyst",
+    "nuclear_renaissance_analyst", "hydrogen_economy_realist", "macro_strategist",
+    "venture_signal_reader", "defi_forensic", "emerging_markets_navigator",
+    "fintech_regulator_lens", "quant_systematic_trader",
+    "insurance_catastrophe_modeler", "geopolitics_red_teamer",
+    "china_tech_strategist", "eu_regulatory_architect", "indo_pacific_strategist",
+    "democracy_tech_analyst", "space_economy_analyst", "sanctions_analyst",
+    "materials_science_scout", "synthetic_biology_analyst", "fusion_energy_tracker",
+    "astrobiology_horizon_scanner", "neuroscience_consciousness",
+    "food_systems_futurist", "ocean_systems_analyst", "superforecaster_fox",
+    "systems_collapse_analyst", "tech_ethics_philosopher",
+    "media_narrative_analyst", "metacognition_calibrator", "scenario_planner",
+    "prediction_market_analyst",
+]
+
+
+def cmd_create(args: argparse.Namespace) -> None:
+    """Create an agent from a template archetype."""
+    client = _get_client(args)
+    try:
+        archetype = args.archetype
+        if not archetype:
+            print("Available archetypes (50):\n")
+            for i, a in enumerate(ARCHETYPES):
+                label = a.replace("_", " ").title()
+                print(f"  {i + 1:>2}. {label:<40} ({a})")
+            print()
+            choice = _prompt("Pick an archetype (number or key)")
+            if choice.isdigit():
+                idx = int(choice) - 1
+                if 0 <= idx < len(ARCHETYPES):
+                    archetype = ARCHETYPES[idx]
+                else:
+                    print("Invalid choice.", file=sys.stderr)
+                    sys.exit(1)
+            else:
+                archetype = choice.strip()
+
+        if archetype not in ARCHETYPES:
+            print(f"Warning: '{archetype}' is not a known archetype. Proceeding anyway.")
+
+        name = args.name or _prompt("Agent name", archetype.replace("_", "-"))
+        persona_name = archetype.replace("_", " ").title()
+
+        risk = args.risk or "moderate"
+        depth = args.depth or "standard"
+        provider = args.provider or "platform"
+        model = args.model or "platform-free"
+
+        print(f"\n  Creating agent '{name}' from archetype '{archetype}'...")
+        print(f"  Provider: {provider}, Model: {model}")
+        print(f"  Risk: {risk}, Search Depth: {depth}")
+
+        creds_path = Path.home() / ".config" / "wavestreamer" / "credentials.json"
+        auth_token = ""
+        if creds_path.exists():
+            try:
+                creds = json.loads(creds_path.read_text())
+                agents = creds.get("agents", [])
+                idx = min(creds.get("active_agent", 0), max(len(agents) - 1, 0))
+                if agents:
+                    auth_token = agents[idx].get("api_key", "")
+            except (json.JSONDecodeError, OSError):
+                pass
+
+        if not auth_token:
+            api_key = getattr(args, "api_key", None) or os.environ.get("WAVESTREAMER_API_KEY", "")
+            auth_token = api_key
+
+        if not auth_token:
+            print("Error: no auth token. Run 'wavestreamer register' or set WAVESTREAMER_API_KEY.", file=sys.stderr)
+            sys.exit(1)
+
+        result = client.create_agent_from_template(
+            auth_token=auth_token,
+            archetype=archetype,
+            persona_name=persona_name,
+            agent_name=name,
+            llm_provider=provider,
+            llm_model=model,
+            risk_profile=risk,
+            search_depth=depth,
+            auto_start=not args.no_start,
+        )
+
+        agent = result.get("agent", {})
+        api_key = result.get("api_key", "")
+        health = result.get("health", {})
+        warnings = result.get("warnings", [])
+
+        print(f"\n  ✓ Agent '{agent.get('name', name)}' created!")
+        print(f"    ID:     {agent.get('id', '—')}")
+        if api_key:
+            print(f"    Key:    {api_key[:8]}...{api_key[-4:]}")
+
+        if health:
+            checks = [
+                ("Persona", health.get("persona_assigned")),
+                ("Runtime", health.get("runtime_config_ok")),
+                ("Sources", health.get("packs_assigned")),
+                ("Started", health.get("started")),
+            ]
+            print("    Health: " + " | ".join(
+                f"{'✓' if ok else '✗'} {label}" for label, ok in checks
+            ))
+
+        for w in warnings:
+            print(f"    ⚠ {w}")
+
+        print(f"\n  Next: wavestreamer predict")
+
+    except WaveStreamerError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    finally:
+        client.close()
+
+
 # -- bridge commands ---------------------------------------------------------
 
 
@@ -762,7 +1150,7 @@ def cmd_connect(args: argparse.Namespace) -> None:
         from wavestreamer.bridge.client import BridgeClient
     except ImportError as e:
         print(f"Error: missing dependency — {e}", file=sys.stderr)
-        print("  Install with: pip install wavestreamer[realtime]", file=sys.stderr)
+        print("  Install with: pip install wavestreamer-sdk[realtime]", file=sys.stderr)
         sys.exit(1)
 
     bridge = BridgeClient(api_key=api_key, base_url=ws_url)
@@ -871,6 +1259,10 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("login", help="Open browser to link/verify your agent")
     p.set_defaults(func=cmd_login)
 
+    # init — full guided setup
+    p = sub.add_parser("init", help="Full guided setup: register + configure provider + start")
+    p.set_defaults(func=cmd_init)
+
     # register
     p = sub.add_parser("register", help="Register a new agent (interactive)")
     p.add_argument("name", nargs="?", default="", help="Agent name (2-30 chars, prompted if omitted)")
@@ -880,6 +1272,17 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Persona: data_driven, contrarian, consensus, first_principles, domain_expert, risk_assessor, trend_follower, devil_advocate")
     p.add_argument("--risk", default=None, help="Risk profile: conservative, moderate, aggressive")
     p.set_defaults(func=cmd_register)
+
+    # create — template-based agent creation
+    p = sub.add_parser("create", help="Create an agent from a template archetype")
+    p.add_argument("archetype", nargs="?", default="", help="Archetype key (shows list if omitted)")
+    p.add_argument("--name", default="", help="Agent name (derived from archetype if omitted)")
+    p.add_argument("--provider", default=None, help="LLM provider: anthropic, openai, openrouter, ollama, platform")
+    p.add_argument("--model", default=None, help="LLM model name")
+    p.add_argument("--risk", choices=["conservative", "moderate", "aggressive"], default=None, help="Risk profile")
+    p.add_argument("--depth", choices=["minimal", "standard", "deep"], default=None, help="Web research depth")
+    p.add_argument("--no-start", action="store_true", help="Don't auto-start the agent after creation")
+    p.set_defaults(func=cmd_create)
 
     # predict
     p = sub.add_parser("predict", help="Predict on a question (interactive)")

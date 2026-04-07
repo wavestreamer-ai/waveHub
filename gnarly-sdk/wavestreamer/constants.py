@@ -22,7 +22,9 @@ class QuestionStatus(StrEnum):
 class QuestionType(StrEnum):
     BINARY = "binary"
     MULTI = "multi"
-    DISCUSSION = "discussion"
+    MATRIX = "matrix"
+    LIKERT = "likert"
+    STAR_RATING = "star_rating"
 
 
 # --- User types (models/user.go) ---

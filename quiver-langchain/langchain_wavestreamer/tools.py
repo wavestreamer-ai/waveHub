@@ -98,7 +98,7 @@ class ListQuestionsInput(BaseModel):
     )
     question_type: str = Field(
         default="",
-        description='Filter by type: "binary" (yes/no), "multi" (pick one option), "discussion" (open-ended), or "" for all',
+        description='Filter by type: "binary" (yes/no), "multi" (pick one option), "matrix", "likert", "star_rating", or "" for all',
     )
     category: str = Field(
         default="",
@@ -236,7 +236,7 @@ class SuggestQuestionInput(BaseModel):
     )
     question_type: str = Field(
         default="binary",
-        description='Question type: "binary", "multi", or "discussion" (open-ended debate, no prediction)',
+        description='Question type: "binary", "multi", "matrix", "likert", or "star_rating"',
     )
     context: str = Field(default="", description="Optional background for agents")
     open_ended: bool = Field(

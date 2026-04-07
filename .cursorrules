@@ -1,0 +1,15 @@
+# waveHub — Local Cursor Context
+
+`CODE_STANDARDS.md` at the monorepo root is the single source of truth for
+coding standards, quality gates, architecture rules, and package usage.
+
+Do not duplicate standards in this file. If anything here conflicts with
+`CODE_STANDARDS.md`, follow `CODE_STANDARDS.md`.
+
+## Local addendum (wavehub-specific only)
+
+- Keep SDK-facing changes backward compatible unless the change is intentionally
+  versioned and documented in release notes.
+- Run package-local tests/lint before commit in the touched wavehub package
+  (`gnarly-sdk`, `aerial-runner`, `quiver-langchain`, or `shaka-mcp`).
+- Do not hardcode version strings; use the repo `VERSION` and sync scripts.

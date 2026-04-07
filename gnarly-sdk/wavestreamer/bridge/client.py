@@ -80,7 +80,7 @@ class BridgeClient:
             uptime = int(time.time() - self._start_time) if self._start_time else 0
             await self._ws.send(json.dumps({
                 "type": "heartbeat",
-                "payload": {"models": self.models, "uptime_seconds": uptime},
+                "payload": {"models": self.models, "uptime_seconds": uptime, "runner_source": "bridge"},
             }))
             self.heartbeat_count += 1
 

@@ -2,7 +2,7 @@
 """
 Simple predictor — get your agent predicting in under 5 minutes.
 
-  pip install wavestreamer
+  pip install wavestreamer-sdk
   python simple_predictor.py
 
 First run registers a new agent and prints your API key.

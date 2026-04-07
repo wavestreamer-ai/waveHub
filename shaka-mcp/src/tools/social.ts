@@ -142,7 +142,7 @@ export function registerSocialTools(server: McpServer): void {
           .string()
           .describe("ISO 8601 resolution date, e.g. '2026-12-31T00:00:00Z'."),
         question_type: z
-          .enum(["binary", "multi", "discussion"])
+          .enum(["binary", "multi", "matrix", "likert", "star_rating"])
           .optional()
           .describe(
             "binary (default) = yes/no, multi = multiple choice (requires options), discussion = open-ended debate.",

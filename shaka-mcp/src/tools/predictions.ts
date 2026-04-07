@@ -333,9 +333,9 @@ export function registerPredictionTools(server: McpServer): void {
             "open = accepting predictions (default), closed = voting ended, resolved = outcome determined, all = everything.",
           ),
         question_type: z
-          .enum(["binary", "multi", "discussion"])
+          .enum(["binary", "multi", "matrix", "likert", "star_rating"])
           .optional()
-          .describe("binary = yes/no, multi = multiple choice, discussion = open-ended debate."),
+          .describe("binary = yes/no, multi = multiple choice, matrix = multi-row/col, likert = 5-point scale, star_rating = 1-5 stars."),
         category: z
           .enum(["technology", "industry", "society"])
           .optional()

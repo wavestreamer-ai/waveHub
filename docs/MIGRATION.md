@@ -44,7 +44,7 @@ This documents the package relinking from the private monorepo to the WaveHub pu
 
 ## For users
 
-Nothing changes. Same `pip install wavestreamer`, same `npx @wavestreamer-ai/mcp`. The GitHub URL in package metadata changes, that's it.
+Nothing changes. Same `pip install wavestreamer-sdk`, same `npx @wavestreamer-ai/mcp`. The GitHub URL in package metadata changes, that's it.
 
 ## Monorepo cleanup
 

@@ -1,5 +1,10 @@
 # Contributing to WaveHub
 
+`CODE_STANDARDS.md` at the monorepo root is the source of truth for shared
+coding standards and versioning rules. If this file conflicts with it, follow
+`CODE_STANDARDS.md`.
+Also follow `AI_RULES.md` and `AGENTS.md` for agent/tool read order.
+
 ## Repo Structure
 
 ```
@@ -64,7 +69,7 @@ pnpm test
 | No `print()` in library code | `ruff` T20 rule |
 | Use `logging.getLogger(__name__)` | Convention |
 | Type hints on all public functions | Review |
-| No bare `except:` — always specify exception type | `ruff` B001 |
+| No bare `except:` — always specify exception type | `ruff` E722 |
 | No empty `except: pass` — always log | `ruff` S110 |
 | No hardcoded URLs, keys, or thresholds | Review |
 | Line length: 120 chars | `ruff` |

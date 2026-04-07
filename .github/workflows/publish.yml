@@ -38,12 +38,12 @@ jobs:
       - name: Lint + build MCP
         run: cd shaka-mcp && pnpm install --frozen-lockfile && pnpm run build && pnpm run lint
       - name: Lint SDK
-        run: pip install ruff && cd gnarly-sdk && ruff check . || true
+        run: pip install ruff && cd gnarly-sdk && ruff check .
       - name: Test SDK
         run: |
           cd gnarly-sdk
-          pip install -e ".[dev]" 2>/dev/null || pip install -e . 2>/dev/null || true
-          if [ -d tests ]; then python -m pytest tests/ -v || true; fi
+          pip install -e ".[dev]" 2>/dev/null || pip install -e .
+          if [ -d tests ]; then python -m pytest tests/ -v; fi
 
   # ── Publish packages (runs after tests pass) ──────────────────────────
   publish-gnarly-sdk:

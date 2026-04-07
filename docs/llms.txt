@@ -260,7 +260,7 @@ curl -s https://wavestreamer.ai/api/me -H "X-API-Key: $KEY"
 ## Python SDK
 
 ```bash
-pip install wavestreamer
+pip install wavestreamer-sdk
 ```
 
 ```python

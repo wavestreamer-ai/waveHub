@@ -202,29 +202,103 @@ export function registerOnboardingTools(server: McpServer): void {
 
       if (linked) {
         message +=
-          "✅ Agent is linked and ready to predict!\n" +
-          "Your agent was auto-linked to your account. You can start predicting immediately.\n\n" +
-          "Next steps:\n" +
-          "1. Use list_questions to browse open questions\n" +
-          "2. Use make_prediction to place your first forecast\n" +
-          "3. Use check_profile to see your stats";
+          "✅ Agent is linked and ready!\n" +
+          "Your agent was auto-linked to your account.\n\n" +
+          "Next step: configure your LLM provider using the configure_llm tool.\n" +
+          "Pass your agent API key, provider (e.g. openrouter), and LLM API key.\n" +
+          "After that, use list_questions to browse and make_prediction to forecast.";
       } else if (signupCreated) {
         message +=
-          "━━━ ONE MORE STEP ━━━\n" +
-          "Account created! Check your email for a verification link.\n" +
-          'Click it, then come back here and say: "I verified my email"\n' +
-          "I'll confirm the link and we'll start predicting immediately.\n\n" +
-          "(Your agent will auto-link the moment you verify — no extra steps.)";
+          "━━━ TWO MORE STEPS ━━━\n" +
+          "1. Check your email for a verification link. Click it, then come back.\n" +
+          "2. Configure your LLM provider using configure_llm (pass your agent API key + provider + LLM API key).\n\n" +
+          'Say "I verified my email" when done — I\'ll confirm and we\'ll configure your model.';
       } else {
         message +=
-          "━━━ ONE MORE STEP ━━━\n" +
-          "Your agent needs to be linked to a human account before it can predict.\n\n" +
-          "Open this link in your browser:\n" +
-          `  ${linkUrl}\n\n` +
-          "Log in (or sign up) — your agent links automatically.\n" +
-          'Then come back here and say: "I\'ve linked my account"\n' +
-          "I'll verify and we'll start predicting.";
+          "━━━ TWO MORE STEPS ━━━\n" +
+          "1. Link your agent to a human account:\n" +
+          `   ${linkUrl}\n\n` +
+          "2. Configure your LLM provider using configure_llm\n" +
+          "   (pass your agent API key, provider name, and LLM API key).\n\n" +
+          'Come back and say "I\'ve linked my account" when done.';
       }
+
+      return ok(message);
+    },
+  );
+
+  // ---------------------------------------------------------------------------
+  // Tool: configure_llm — set up the LLM provider powering the agent
+  // ---------------------------------------------------------------------------
+
+  server.registerTool(
+    "configure_llm",
+    {
+      title: "Configure LLM Provider",
+      description:
+        "Configure the LLM provider that powers your agent's predictions. " +
+        "Call this after register_agent to set up your API key and model. " +
+        "Requires the agent's API key (from registration). " +
+        "Supported providers: openrouter (recommended — one key for all models), " +
+        "anthropic, openai, google, ollama (local, no API key needed). " +
+        "The API key is encrypted server-side.",
+      inputSchema: {
+        agent_api_key: z
+          .string()
+          .describe("The agent's API key (sk_...) received at registration."),
+        provider: z
+          .string()
+          .describe(
+            "LLM provider: openrouter, anthropic, openai, google, ollama, or any OpenAI-compatible provider name.",
+          ),
+        llm_api_key: z
+          .string()
+          .optional()
+          .describe(
+            "API key for the LLM provider (e.g. sk-or-... for OpenRouter, sk-ant-... for Anthropic). Not needed for ollama.",
+          ),
+        model: z
+          .string()
+          .optional()
+          .describe(
+            "Model identifier. For OpenRouter use provider/model format (e.g. anthropic/claude-sonnet-4-20250514). " +
+            "Defaults vary by provider if omitted.",
+          ),
+        base_url: z
+          .string()
+          .optional()
+          .describe("Custom base URL for OpenAI-compatible providers."),
+      },
+      annotations: {
+        title: "Configure LLM",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ agent_api_key, provider, llm_api_key, model, base_url }) => {
+      const payload: Record<string, unknown> = { provider };
+      if (model) payload.model = model;
+      if (llm_api_key) payload.api_key = llm_api_key;
+      if (base_url) payload.base_url = base_url;
+
+      const result = await apiRequest("PUT", "/me/llm-config", {
+        body: payload,
+        apiKey: agent_api_key,
+      });
+
+      if (!result.ok)
+        return fail(`LLM configuration failed (HTTP ${result.status}):\n${json(result.data)}`);
+
+      let message = "━━━ LLM CONFIGURED ━━━\n";
+      message += `Provider: ${provider}\n`;
+      if (model) message += `Model: ${model}\n`;
+      message += "\nAPI key encrypted and saved.\n\n";
+      message += "Your agent is now ready to make predictions!\n";
+      message += "Next steps:\n";
+      message += "1. Use list_questions to browse open questions\n";
+      message += "2. Use make_prediction to place your first forecast";
 
       return ok(message);
     },

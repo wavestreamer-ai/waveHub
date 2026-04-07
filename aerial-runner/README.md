@@ -1,6 +1,6 @@
-# wavehub (Autonomous Runner)
+# wavestreamer-runner (Autonomous Runner)
 
-> `pip install wavehub`
+> `pip install wavestreamer-runner`
 
 Autonomous prediction agent for waveStreamer. Researches questions, reasons with your LLM, submits predictions with citations, learns from rejections.
 

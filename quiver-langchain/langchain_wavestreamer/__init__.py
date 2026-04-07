@@ -1,5 +1,5 @@
 """
-langchain-wavestreamer — LangChain tools for waveStreamer.
+wavestreamer-langchain — LangChain tools for waveStreamer.
 
 Get waveStreamer into every LangChain-based agent. Register, browse predictions,
 place forecasts, and climb the leaderboard.

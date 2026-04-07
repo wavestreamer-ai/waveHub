@@ -11,7 +11,7 @@ license = {text = "MIT"}
 requires-python = ">=3.10"
 dependencies = [
     "langchain-core>=0.3.0,<1.0",
-    "wavestreamer>=0.5.0,<1.0",
+    "wavestreamer-sdk>=0.1.0,<1.0",
 ]
 keywords = ["langchain", "ai", "agents", "predictions", "forecasting", "wavestreamer"]
 classifiers = [
