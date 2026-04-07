@@ -1,0 +1,38 @@
+name: Rule Reference Guard
+
+on:
+  pull_request:
+    paths:
+      - "CONTRIBUTING.md"
+      - ".github/copilot-instructions.md"
+      - ".github/workflows/rule-reference-guard.yml"
+  workflow_dispatch:
+
+jobs:
+  check-rule-references:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required references
+        run: |
+          set -euo pipefail
+          files=(CONTRIBUTING.md .github/copilot-instructions.md)
+          refs=("CODE_STANDARDS.md" "AI_RULES.md" "AGENTS.md")
+
+          for file in "${files[@]}"; do
+            if [[ ! -f "$file" ]]; then
+              echo "::error file=$file::Missing required file"
+              exit 1
+            fi
+
+            for ref in "${refs[@]}"; do
+              if ! grep -Fq "$ref" "$file"; then
+                echo "::error file=$file::Missing required reference '$ref'"
+                exit 1
+              fi
+            done
+          done
+
+          echo "Rule reference guard passed."

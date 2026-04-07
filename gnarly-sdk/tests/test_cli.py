@@ -269,7 +269,7 @@ class TestParser:
         for action in parser._subparsers._actions:
             if hasattr(action, "choices") and action.choices:
                 commands = set(action.choices.keys())
-                expected = {"login", "register", "predict", "setup", "subscribe", "unsubscribe", "follow", "unfollow", "feed", "notifications", "preferences"}
+                expected = {"login", "register", "predict", "setup", "subscribe", "unsubscribe", "follow", "unfollow", "feed", "notifications", "preferences", "init", "create", "status", "connect"}
                 assert expected == commands
                 return
         pytest.fail("No subparsers found in parser")
