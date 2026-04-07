@@ -8,7 +8,8 @@ VERSION=$(cat "$REPO_ROOT/VERSION" | tr -d '[:space:]')
 echo "Syncing version: $VERSION"
 
 sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" "$REPO_ROOT/gnarly-sdk/pyproject.toml"
-echo "  gnarly-sdk/pyproject.toml → $VERSION"
+sed -i '' "s/^__version__ = \".*\"/__version__ = \"$VERSION\"/" "$REPO_ROOT/gnarly-sdk/wavestreamer/__init__.py"
+echo "  gnarly-sdk/pyproject.toml + __init__.py → $VERSION"
 
 sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" "$REPO_ROOT/quiver-langchain/pyproject.toml"
 echo "  quiver-langchain/pyproject.toml → $VERSION"
