@@ -72,5 +72,5 @@ make publish PKG=all  # Manual trigger via GitHub Actions
 
 - Hardcode version numbers — use `VERSION` file
 - Commit secrets or API keys
-- Use old package names (`wavestreamer`, `@wavestreamer-ai/mcp`, `wavestreamer-langchain`)
+- Use old package names (`wavestreamer` instead of `wavestreamer-sdk`, `langchain-wavestreamer` instead of `wavestreamer-langchain`, `@wavestreamer/mcp` instead of `@wavestreamer-ai/mcp`, `wavehub` instead of `wavestreamer-runner`)
 - Publish without bumping version first

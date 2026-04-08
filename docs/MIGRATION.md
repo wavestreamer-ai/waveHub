@@ -1,56 +1,38 @@
-# Package Migration: Monorepo to WaveHub
+# Package Migration — COMPLETED
 
-This documents the package relinking from the private monorepo to the WaveHub public repo.
+All packages have been migrated from the private monorepo to the WaveHub public repo. Migration is complete as of 2026-04-08.
 
-## What moved
+## Current Packages (all published from wavehub)
 
-| Package | Old location | New location | npm/PyPI name | Breaking change? |
-|---------|-------------|-------------|---------------|-----------------|
-| Python SDK | `wavestreamer/agents/` | `wavehub/sdk/` | `wavestreamer` | No |
-| MCP Server | `wavestreamer/mcp/` | `wavehub/mcp/` | `@wavestreamer-ai/mcp` | No |
-| LangChain | `wavestreamer/langchain-wavestreamer/` | `wavehub/langchain/` | `langchain-wavestreamer` | No |
-| Runner | *NEW* (extracted from fleet) | `wavehub/runner/` | `wavehub` | N/A (new package) |
+| Directory | Package | Registry | Install |
+|-----------|---------|----------|---------|
+| `gnarly-sdk/` | `wavestreamer-sdk` | PyPI | `pip install wavestreamer-sdk` |
+| `shaka-mcp/` | `@wavestreamer-ai/mcp` | npm | `npx @wavestreamer-ai/mcp` |
+| `quiver-langchain/` | `wavestreamer-langchain` | PyPI | `pip install wavestreamer-langchain` |
+| `aerial-runner/` | `wavestreamer-runner` | PyPI | `pip install wavestreamer-runner` |
+| `wave-ts/` | `@wavestreamer-ai/sdk` | npm | `npm install @wavestreamer-ai/sdk` |
+| `reef-crewai/` | `wavestreamer-crewai` | PyPI | `pip install wavestreamer-crewai` |
 
-## What changed in package configs
+## Old Names (DO NOT USE)
 
-### Python SDK (`pyproject.toml`)
-```diff
-[project.urls]
--Repository = "https://wavestreamer.ai"
-+Repository = "https://github.com/wavestreamer-ai/waveHub"
-```
-
-### MCP Server (`package.json`)
-```diff
--"repository": { "type": "git", "url": "..." }
-+"repository": { "type": "git", "url": "https://github.com/wavestreamer-ai/waveHub.git", "directory": "mcp" }
-```
-
-### LangChain (`pyproject.toml`)
-```diff
-[project.urls]
--Repository = "..."
-+Repository = "https://github.com/wavestreamer-ai/waveHub"
-```
+| Old Name | Replaced By | Status |
+|----------|-------------|--------|
+| `wavestreamer` (PyPI) | `wavestreamer-sdk` | Deprecated on PyPI — do not publish to it |
+| `langchain-wavestreamer` (PyPI) | `wavestreamer-langchain` | Deprecated on PyPI — do not publish to it |
+| `@wavestreamer/mcp` (npm) | `@wavestreamer-ai/mcp` | Old scope deleted |
+| `wavehub` (PyPI) | `wavestreamer-runner` | Old name abandoned |
 
 ## CI/CD
 
-- The monorepo **stops publishing** these packages
-- WaveHub repo CI publishes on git tags:
-  - `sdk-v*` → PyPI `wavestreamer`
-  - `mcp-v*` → npm `@wavestreamer-ai/mcp`
-  - `langchain-v*` → PyPI `langchain-wavestreamer`
-  - `runner-v*` → PyPI `wavehub`
+All publishing happens from `wavehub/.github/workflows/publish.yml` via git tags:
 
-## For users
+```
+gnarly-sdk-v*      → PyPI: wavestreamer-sdk
+shaka-mcp-v*       → npm: @wavestreamer-ai/mcp
+quiver-langchain-v* → PyPI: wavestreamer-langchain
+aerial-runner-v*   → PyPI: wavestreamer-runner
+wave-ts-v*         → npm: @wavestreamer-ai/sdk
+reef-crewai-v*     → PyPI: wavestreamer-crewai
+```
 
-Nothing changes. Same `pip install wavestreamer-sdk`, same `npx @wavestreamer-ai/mcp`. The GitHub URL in package metadata changes, that's it.
-
-## Monorepo cleanup
-
-After migration:
-1. Remove `wavestreamer/agents/` (or replace with symlink/submodule)
-2. Remove `wavestreamer/mcp/` (or replace)
-3. Remove `wavestreamer/langchain-wavestreamer/` (or replace)
-4. Update Mintlify docs GitHub links
-5. Update CLAUDE.md references
+The private `wavestreamer/` repo has zero publish responsibility. No stale pipelines remain.
