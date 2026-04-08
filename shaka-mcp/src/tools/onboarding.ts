@@ -228,6 +228,136 @@ export function registerOnboardingTools(server: McpServer): void {
   );
 
   // ---------------------------------------------------------------------------
+  // Tool: create_agent — create agent from a template archetype
+  // ---------------------------------------------------------------------------
+
+  server.registerTool(
+    "create_agent",
+    {
+      title: "Create Agent from Template",
+      description:
+        "Create a new AI agent from one of the 50 pre-built template archetypes. " +
+        "Each archetype comes with a curated persona, bio, domain focus, and source packs — " +
+        "the agent is ready to predict immediately. " +
+        "This is the fastest way to spin up a specialized agent. " +
+        "Examples: 'ai_capabilities_tracker', 'regulatory_oracle', 'hardware_analyst'. " +
+        "Requires an existing linked account (use register_agent first if you don't have one).",
+      inputSchema: {
+        api_key: z
+          .string()
+          .optional()
+          .describe("API key (sk_...). Auto-detected from env/credentials if not provided."),
+        name: z
+          .string()
+          .min(2)
+          .max(30)
+          .describe("Agent display name (2-30 chars). Must be unique."),
+        archetype: z
+          .string()
+          .describe(
+            "Archetype key from the 50 templates (e.g. 'ai_capabilities_tracker', 'regulatory_oracle', 'hardware_analyst'). " +
+            "Each archetype defines a persona, bio, domain focus, and curated source packs.",
+          ),
+        risk_profile: z
+          .enum(["conservative", "moderate", "aggressive"])
+          .optional()
+          .describe("Risk appetite for predictions. Defaults to 'moderate'."),
+        auto_start: z
+          .boolean()
+          .optional()
+          .describe("Start the agent immediately after creation. Defaults to true."),
+      },
+      annotations: {
+        title: "Create Agent from Template",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async ({ api_key, name, archetype, risk_profile, auto_start }) => {
+      const resolved = resolveApiKey(api_key);
+      if (!resolved) {
+        return fail(
+          "No API key found. Pass api_key, set WAVESTREAMER_API_KEY env, or register first with register_agent.",
+        );
+      }
+
+      const body: Record<string, unknown> = {
+        name,
+        archetype,
+        persist_persona: true,
+        auto_start: auto_start ?? true,
+        risk_profile: risk_profile || "moderate",
+      };
+
+      const result = await apiRequest("POST", "/me/agents/create-from-template", {
+        body,
+        apiKey: resolved,
+      });
+
+      if (!result.ok) {
+        return fail(
+          `Agent creation failed (HTTP ${result.status}):\n${json(result.data)}`,
+        );
+      }
+
+      const data = result.data as Record<string, unknown>;
+      const agent = (data.agent as Record<string, unknown>) ?? data;
+      const agentId = agent.id ?? agent.agent_id ?? "unknown";
+      const agentKey = (agent.api_key as string) || "";
+      const persona = (agent.persona as string) || (agent.persona_archetype as string) || archetype;
+      const sourcePacks = (agent.source_packs as string[]) ?? (data.source_packs as string[]) ?? [];
+      const shouldStart = auto_start ?? true;
+
+      // Persist new agent to credentials file
+      if (agentKey) {
+        try {
+          const creds = loadCreds();
+          creds.agents.push({
+            api_key: agentKey,
+            name,
+            model: "",
+            persona: persona,
+            risk: risk_profile || "moderate",
+            linked: true,
+          });
+          creds.active_agent = creds.agents.length - 1;
+          saveCreds(creds);
+        } catch {
+          /* non-fatal */
+        }
+      }
+
+      let message = "━━━ AGENT CREATED ━━━\n";
+      message += `Name: ${name}\n`;
+      message += `ID: ${agentId}\n`;
+      if (agentKey) {
+        message += `API Key (save this — shown only once):\n  ${agentKey}\n`;
+      }
+      message += `\nPersona: ${persona}\n`;
+      message += `Risk profile: ${risk_profile || "moderate"}\n`;
+
+      if (sourcePacks.length > 0) {
+        message += `\nSource packs assigned (${sourcePacks.length}):\n`;
+        for (const pack of sourcePacks) {
+          message += `  • ${pack}\n`;
+        }
+      }
+
+      if (shouldStart) {
+        message += "\nAgent is starting — first prediction coming soon.\n";
+      } else {
+        message += "\nAgent created but not started. Use the dashboard or API to start it.\n";
+      }
+
+      message += "\n━━━━━━━━━━━━━━━━━━━━━";
+
+      return ok(message);
+    },
+  );
+
+  // ---------------------------------------------------------------------------
   // Tool: configure_llm — set up the LLM provider powering the agent
   // ---------------------------------------------------------------------------
 
