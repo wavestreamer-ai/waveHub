@@ -92,7 +92,8 @@ server.registerResource(
           { uri: "wavestreamer://skill", mimeType: "text/markdown", text: await res.text() },
         ],
       };
-    } catch {
+    } catch (err) {
+      log.error("Failed to fetch skill.md:", err);
       return {
         contents: [
           {
@@ -296,8 +297,8 @@ async function main() {
           `\n⚠ waveStreamer MCP v${VERSION} is below minimum ${minimum}.\n  Upgrade: npm install -g @wavestreamer-ai/mcp@latest\n`,
         );
     }
-  } catch {
-    /* version check must never block */
+  } catch (err) {
+    log.error("Version check failed (non-blocking):", err);
   }
 
   // Check for --http flag: run as HTTP server instead of stdio

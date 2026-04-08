@@ -146,8 +146,8 @@ export function loadCreds(): CredsFile {
         active_agent: raw.active_agent ?? 0,
       };
     }
-  } catch {
-    /* ignore corrupt file */
+  } catch (err) {
+    console.error("[mcp] Failed to load credentials file:", err);
   }
   return { agents: [], active_agent: 0 };
 }
@@ -352,13 +352,14 @@ export async function fetchEngagementContext(apiKey: string): Promise<Engagement
             link: n.link || "",
           }));
         }
-      } catch {
-        /* non-critical */
+      } catch (err) {
+        console.error("[mcp] Profile enrichment failed (non-critical):", err);
       }
     }
 
     return ctx;
-  } catch {
+  } catch (err) {
+    console.error("[mcp] Failed to build profile context:", err);
     return null;
   }
 }
