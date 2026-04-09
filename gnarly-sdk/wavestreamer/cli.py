@@ -752,9 +752,61 @@ def cmd_predict(args: argparse.Namespace) -> None:
     except WaveStreamerError as exc:
         print(f"  Warning: preflight unavailable ({exc}), proceeding anyway")
 
-    # Collect prediction input
-    print("\n  Write your prediction below.")
-    print("  Include ## headers, 200+ chars reasoning, and 2+ URL citations.")
+    # Detect question type for structured handling
+    q_obj = None
+    question_type = "binary"
+    try:
+        q_data = client.get_question(question_id)
+        q_obj = q_data.get("question", {})
+        question_type = q_obj.get("question_type", "binary") if isinstance(q_obj, dict) else "binary"
+    except Exception:
+        pass  # Fall through to binary flow
+
+    response_data = None
+    if question_type == "matrix":
+        rows = q_obj.get("matrix_rows", []) if q_obj else []
+        cols = q_obj.get("matrix_cols", []) if q_obj else []
+        if rows and cols:
+            print(f"\n  Matrix question: rate each row against columns.")
+            print(f"  Columns: {' | '.join(cols)}\n")
+            response_data = {}
+            for row in rows:
+                col_val = _prompt(f"  {row}", cols[0])
+                if col_val not in cols:
+                    print(f"    Warning: '{col_val}' not in columns, using '{cols[0]}'")
+                    col_val = cols[0]
+                response_data[row] = col_val
+
+    elif question_type == "likert":
+        dims = q_obj.get("likert_dimensions", []) if q_obj else []
+        if dims:
+            print("\n  Likert question: rate each dimension 1-5.\n")
+            response_data = {}
+            for d in dims:
+                name = d.get("name", "?") if isinstance(d, dict) else str(d)
+                scale = d.get("scale", "intensity") if isinstance(d, dict) else "intensity"
+                val_str = _prompt(f"  {name} ({scale}, 1-5)", "3")
+                try:
+                    val = max(1, min(5, int(val_str)))
+                except ValueError:
+                    val = 3
+                response_data[name] = val
+
+    elif question_type == "star_rating":
+        print("\n  Star rating question: rate 1-5 stars.\n")
+        val_str = _prompt("  Rating (1-5)", "3")
+        try:
+            rating = max(1, min(5, int(val_str)))
+        except ValueError:
+            rating = 3
+        response_data = {"rating": rating}
+
+    # Collect reasoning
+    if response_data:
+        print("\n  Write your reasoning (why you chose these ratings).")
+    else:
+        print("\n  Write your prediction below.")
+        print("  Include ## headers, 200+ chars reasoning, and 2+ URL citations.")
     print("  (Paste multi-line, then press Enter on an empty line to finish)\n")
 
     lines: list[str] = []
@@ -776,7 +828,8 @@ def cmd_predict(args: argparse.Namespace) -> None:
         return
 
     # Confidence
-    prob_str = _prompt("Probability (0-100, where 100 = certain Yes)", "70")
+    conf_label = "Confidence in your ratings (0-100)" if response_data else "Probability (0-100, where 100 = certain Yes)"
+    prob_str = _prompt(conf_label, "70")
     try:
         probability = max(0, min(100, int(prob_str)))
     except ValueError:
@@ -786,25 +839,31 @@ def cmd_predict(args: argparse.Namespace) -> None:
     # Place prediction (auto-builds resolution_protocol from question)
     print("\n  Placing prediction...")
     try:
-        result = client.predict(
-            question_id=question_id,
-            reasoning=reasoning,
-            probability=probability,
-            model=model,
-        )
-        print("\n  ✓ Prediction placed!")
+        predict_kwargs: dict = {
+            "question_id": question_id,
+            "reasoning": reasoning,
+            "probability": probability,
+            "model": model,
+        }
+        if response_data:
+            predict_kwargs["response_data"] = response_data
+        result = client.predict(**predict_kwargs)
+        print("\n  Prediction placed!")
         print(f"    ID: {result.id}")
         print(f"    Confidence: {result.confidence}%")
-        print(f"    Prediction: {'Yes' if result.prediction else 'No'}")
+        if response_data:
+            print(f"    Type: {question_type}")
+        else:
+            print(f"    Prediction: {'Yes' if result.prediction else 'No'}")
     except WaveStreamerError as exc:
-        print(f"\n  ✗ Prediction rejected: {exc}", file=sys.stderr)
+        print(f"\n  Prediction rejected: {exc}", file=sys.stderr)
         if "citation" in str(exc).lower() or "url" in str(exc).lower():
             print("    Tip: Include 2+ real URLs from different domains in your reasoning.")
         if "reasoning" in str(exc).lower() or "character" in str(exc).lower():
             print("    Tip: Write 200+ characters with ## section headers.")
         sys.exit(1)
     except ValueError as exc:
-        print(f"\n  ✗ Validation error: {exc}", file=sys.stderr)
+        print(f"\n  Validation error: {exc}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -1116,12 +1175,23 @@ def cmd_connect(args: argparse.Namespace) -> None:
     ws_url = base_url.replace("https://", "wss://").replace("http://", "ws://")
 
     # Detect local models
+    inference_url = getattr(args, "inference_url", "http://localhost:11434")
+    provider_type = getattr(args, "provider_type", "ollama")
+
     print("Detecting local models...")
-    models = detect_all()
+    # If using a custom inference URL, also probe it for models
+    extra_endpoints: list[tuple[str, str]] = []
+    if provider_type == "openai-compatible" and inference_url != "http://localhost:11434":
+        extra_endpoints.append((inference_url, "custom"))
+    models = detect_all(extra_endpoints=extra_endpoints)
     if not models:
         print("No local models found.", file=sys.stderr)
-        print("  Install Ollama (https://ollama.ai) and pull a model:", file=sys.stderr)
-        print("    ollama pull llama3.2", file=sys.stderr)
+        if provider_type == "openai-compatible":
+            print(f"  Could not reach {inference_url}/v1/models", file=sys.stderr)
+            print("  Make sure your inference server is running.", file=sys.stderr)
+        else:
+            print("  Install Ollama (https://ollama.ai) and pull a model:", file=sys.stderr)
+            print("    ollama pull llama3.2", file=sys.stderr)
         sys.exit(1)
 
     # If user specified --model, filter to those
@@ -1153,7 +1223,15 @@ def cmd_connect(args: argparse.Namespace) -> None:
         print("  Install with: pip install wavestreamer-sdk[realtime]", file=sys.stderr)
         sys.exit(1)
 
-    bridge = BridgeClient(api_key=api_key, base_url=ws_url)
+    inference_api_key = getattr(args, "inference_api_key", "")
+
+    bridge = BridgeClient(
+        api_key=api_key,
+        base_url=ws_url,
+        inference_url=inference_url,
+        provider_type=provider_type,
+        inference_api_key=inference_api_key,
+    )
 
     import asyncio
 
@@ -1302,6 +1380,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("connect", help="Connect local models to wavestreamer via WebSocket bridge")
     p.add_argument("--model", default=None,
                    help="Comma-separated model names to expose (default: all detected)")
+    p.add_argument("--inference-url", default="http://localhost:11434",
+                   help="Local inference endpoint URL (default: http://localhost:11434)")
+    p.add_argument("--provider-type", default="ollama", choices=["ollama", "openai-compatible"],
+                   help="Inference provider format: ollama (default) or openai-compatible")
+    p.add_argument("--inference-api-key", default="",
+                   help="API key for the local inference endpoint (optional)")
     p.set_defaults(func=cmd_connect)
 
     # status

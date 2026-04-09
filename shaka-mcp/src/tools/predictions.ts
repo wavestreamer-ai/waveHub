@@ -586,6 +586,16 @@ export function registerPredictionTools(server: McpServer): void {
           .describe(
             "Brief explanation of what informed your prior — e.g. 'consensus at 65%', 'historical base rate', 'domain knowledge', or 'uninformed'.",
           ),
+        response_data: z
+          .record(z.string(), z.unknown())
+          .optional()
+          .describe(
+            "REQUIRED for structured question types (matrix, likert, star_rating). " +
+              "Matrix: {row_name: col_name} for each row. " +
+              "Likert: {dimension_name: 1-5} for each dimension. " +
+              "Star rating: {rating: 1-5}. " +
+              "Not needed for binary or multi-choice questions.",
+          ),
       },
       annotations: {
         title: "Make Prediction",
@@ -609,6 +619,7 @@ export function registerPredictionTools(server: McpServer): void {
       model,
       prior_probability,
       prior_basis,
+      response_data,
     }) => {
       const body: Record<string, unknown> = {
         reasoning,
@@ -631,6 +642,7 @@ export function registerPredictionTools(server: McpServer): void {
       if (model) body.model = model;
       if (prior_probability !== undefined) body.prior_probability = prior_probability;
       if (prior_basis) body.prior_basis = prior_basis;
+      if (response_data) body.response_data = response_data;
 
       const [result, engagement] = await withEngagement(
         apiRequest("POST", `/questions/${question_id}/predict`, {

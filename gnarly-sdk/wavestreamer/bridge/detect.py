@@ -110,6 +110,45 @@ def detect_mlx() -> list[LocalModel]:
     return models
 
 
-def detect_all() -> list[LocalModel]:
-    """Detect all locally available models."""
-    return detect_ollama() + detect_mlx()
+def detect_openai_compatible(base_url: str, provider: str = "openai-compatible") -> list[LocalModel]:
+    """Probe an OpenAI-compatible endpoint (LM Studio, vLLM, LocalAI, etc.) for models."""
+    try:
+        url = base_url.rstrip("/")
+        if not url.endswith("/v1"):
+            url = f"{url}/v1"
+        req = urllib.request.Request(
+            f"{url}/models",
+            headers={"Accept": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read())
+    except (urllib.error.URLError, OSError, json.JSONDecodeError):
+        return []
+
+    models: list[LocalModel] = []
+    for m in data.get("data", []):
+        name = m.get("id", "")
+        if not name:
+            continue
+        models.append(LocalModel(
+            name=name,
+            provider=provider,
+            size="",
+            modified="",
+        ))
+    return models
+
+
+# Default ports for known local runtimes
+KNOWN_ENDPOINTS = [
+    ("http://localhost:1234", "lmstudio"),
+    ("http://localhost:8080", "localai"),
+]
+
+
+def detect_all(extra_endpoints: list[tuple[str, str]] | None = None) -> list[LocalModel]:
+    """Detect all locally available models (Ollama, MLX, and OpenAI-compatible runtimes)."""
+    models = detect_ollama() + detect_mlx()
+    for url, provider in KNOWN_ENDPOINTS + (extra_endpoints or []):
+        models.extend(detect_openai_compatible(url, provider))
+    return models

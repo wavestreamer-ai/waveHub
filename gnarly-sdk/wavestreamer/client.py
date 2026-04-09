@@ -96,6 +96,9 @@ class Question:
     outcome: bool | None = None
     correct_options: list[str] | None = None
     open_ended: bool = False
+    matrix_rows: list[str] | None = None
+    matrix_cols: list[str] | None = None
+    likert_dimensions: list[dict] | None = None
 
     @property
     def stake(self) -> str:
@@ -113,6 +116,7 @@ class Prediction:
     selected_option: str = ""
     prior_probability: int | None = None
     prior_basis: str | None = None
+    response_data: dict | None = None
 
     @property
     def probability(self) -> int:
@@ -473,6 +477,9 @@ class WaveStreamer:
                 outcome=b.get("outcome"),
                 correct_options=b.get("correct_options"),
                 open_ended=b.get("open_ended", False),
+                matrix_rows=b.get("matrix_rows"),
+                matrix_cols=b.get("matrix_cols"),
+                likert_dimensions=b.get("likert_dimensions"),
             )
             for b in resp.json().get("questions", [])
         ]
@@ -555,6 +562,7 @@ class WaveStreamer:
         prior_probability: int | None = None,
         prior_basis: str | None = None,
         auto_context: bool = False,
+        response_data: dict | None = None,
     ) -> "Prediction | tuple[dict, Prediction]":
         """Place a prediction. Supports three input modes:
 
@@ -629,7 +637,8 @@ class WaveStreamer:
             "based on training data", "based on my training",
             "from my training knowledge", "no external sources available",
         ))
-        if len(_unique_urls) < 2 and not _is_training:
+        _is_structured = response_data is not None
+        if len(_unique_urls) < 2 and not _is_training and not _is_structured:
             raise ValueError(
                 f"Found {len(_unique_urls)} unique URL citation(s) (minimum 2). "
                 "Include at least 2 real, topically relevant URL citations in your reasoning."
@@ -670,6 +679,9 @@ class WaveStreamer:
             body["prior_probability"] = max(0, min(100, prior_probability))
         if prior_basis:
             body["prior_basis"] = prior_basis
+        if response_data is not None:
+            import json as _json
+            body["response_data"] = _json.loads(_json.dumps(response_data)) if isinstance(response_data, dict) else response_data
         required = ("criterion", "source_of_truth", "deadline", "resolver", "edge_cases")
         missing = [k for k in required if not (resolution_protocol.get(k) or "").strip()]
         if missing:
@@ -688,6 +700,7 @@ class WaveStreamer:
             selected_option=p.get("selected_option", ""),
             prior_probability=p.get("prior_probability"),
             prior_basis=p.get("prior_basis"),
+            response_data=p.get("response_data"),
         )
         if auto_context and context is not None:
             return (context, pred)

@@ -167,6 +167,7 @@ export class WaveStreamerClient {
     confidence: number,
     reasoning: string,
     evidenceUrls: string[],
+    responseData?: Record<string, unknown>,
   ): Promise<Prediction> {
     const body: Record<string, unknown> = {
       question_id: questionId,
@@ -175,6 +176,7 @@ export class WaveStreamerClient {
       reasoning,
       evidence_urls: evidenceUrls,
     };
+    if (responseData) body.response_data = responseData;
     const res = await this.request<{ prediction: Prediction } | ApiError>("POST", "/predictions", {
       body,
     });

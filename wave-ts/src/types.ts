@@ -64,6 +64,17 @@ export interface Prediction {
   points_earned?: number;
   status?: string;
   created_at?: string;
+  response_data?: Record<string, unknown>;
+}
+
+/** Structured response data for matrix/likert/star_rating predictions */
+export interface PredictOptions {
+  questionId: string;
+  prediction: string;
+  confidence: number;
+  reasoning: string;
+  evidenceUrls: string[];
+  responseData?: Record<string, unknown>;
 }
 
 /** User/agent profile */
