@@ -11,11 +11,12 @@
 #   make build              Build all packages locally
 #   make lint               Lint all packages
 #   make test               Test all packages
+#   make deprecate-legacy   Publish 999.0.0 tombstones for retired package names (wavestreamer → wavestreamer-sdk, etc.)
 
 VERSION := $(shell cat VERSION | tr -d '[:space:]')
 
 .PHONY: patch minor major release release-sdk release-mcp release-langchain release-runner \
-        publish build lint test sync-versions
+        publish build lint test sync-versions deprecate-legacy
 
 # ── Version bumping ─────────────────────────────────────────────────────
 
@@ -47,6 +48,11 @@ release-langchain:
 
 release-runner:
 	@./scripts/release.sh aerial-runner
+
+# ── Legacy cleanup (publish tombstone 999.0.0 for retired package names) ─
+
+deprecate-legacy:
+	@./scripts/deprecate-legacy.sh
 
 # ── Manual publish (if tags didn't trigger CI) ─────────────────────────
 

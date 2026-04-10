@@ -1279,7 +1279,7 @@ def cmd_status(args: argparse.Namespace) -> None:
         "WAVESTREAMER_API_URL", "https://wavestreamer.ai"
     )
     try:
-        req = urllib.request.Request(f"{base_url}/api/health", headers={"Accept": "application/json"})
+        req = urllib.request.Request(f"{base_url}/health", headers={"Accept": "application/json"})
         with urllib.request.urlopen(req, timeout=5):
             pass
         print(f"  Server:  reachable ({base_url})")
@@ -1433,8 +1433,45 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _version_tuple(v: str) -> tuple[int, ...]:
+    """Convert "1.2.3" to (1, 2, 3) for numeric comparison."""
+    try:
+        return tuple(int(x) for x in v.split("."))
+    except ValueError:
+        return (0,)
+
+
+def _check_for_update() -> None:
+    """Background thread: compare installed version to latest on PyPI, print if outdated."""
+    try:
+        import json as _json
+        import urllib.request as _req
+        from wavestreamer import __version__ as _installed
+
+        # Skip update nag if running from editable/dev install on main branch
+        if _installed == "0.0.0":
+            return
+
+        with _req.urlopen(
+            "https://pypi.org/pypi/wavestreamer-sdk/json", timeout=3
+        ) as resp:
+            data = _json.loads(resp.read())
+        latest = data["info"]["version"]
+
+        if _version_tuple(latest) > _version_tuple(_installed):
+            print(
+                f"\n\033[33mUpdate available: wavestreamer-sdk {_installed} → {latest}\033[0m\n"
+                f"  pip install -U \"wavestreamer-sdk[realtime]\"\n",
+                file=sys.stderr,
+            )
+    except Exception:  # noqa: BLE001 — never crash the CLI over a version check
+        pass
+
+
 def main(argv: list[str] | None = None) -> None:
     """CLI entry point."""
+    import threading
+
     parser = build_parser()
     args = parser.parse_args(argv)
 
@@ -1442,7 +1479,13 @@ def main(argv: list[str] | None = None) -> None:
         parser.print_help()
         sys.exit(0)
 
+    # Fire-and-forget update check (non-blocking; prints after command output if newer version exists)
+    t = threading.Thread(target=_check_for_update, daemon=True)
+    t.start()
+
     args.func(args)
+
+    t.join(timeout=4)  # Wait up to 4 s so the message prints before shell prompt returns
 
 
 if __name__ == "__main__":

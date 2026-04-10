@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wavestreamer"
+# Tombstone release — this package name is retired. Use wavestreamer-sdk instead.
+version = "999.0.0"
+description = "DEPRECATED — install wavestreamer-sdk instead: pip install wavestreamer-sdk"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+# Pull in the real SDK so existing installs still get functionality
+dependencies = ["wavestreamer-sdk>=0.10.0"]
+keywords = ["deprecated"]
+classifiers = [
+    "Development Status :: 7 - Inactive",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://wavestreamer.ai"
+Repository = "https://github.com/wavestreamer-ai/waveHub"
