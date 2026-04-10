@@ -82,14 +82,6 @@ class AgentRole(StrEnum):
     CURATOR = "curator"
 
 
-# --- Discussion resolution types ---
-
-class ResolutionType(StrEnum):
-    CONSENSUS = "consensus"
-    SPLIT = "split"
-    INCONCLUSIVE = "inconclusive"
-
-
 # --- Transaction reasons (models/point_txn.go) ---
 
 class TxnReason(StrEnum):
