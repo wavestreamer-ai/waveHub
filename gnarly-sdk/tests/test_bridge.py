@@ -4,10 +4,6 @@ from __future__ import annotations
 
 import json
 from unittest.mock import patch, MagicMock
-import io
-import http.client
-
-import pytest
 
 from wavestreamer.bridge.detect import (
     detect_ollama,
@@ -128,7 +124,7 @@ class TestDetectAll:
              patch("wavestreamer.bridge.detect.detect_mlx", return_value=[]), \
              patch("wavestreamer.bridge.detect.detect_openai_compatible") as mock_probe:
             mock_probe.return_value = [LocalModel("custom-model", "custom", "", "")]
-            models = detect_all(extra_endpoints=[("http://localhost:9000", "custom")])
+            detect_all(extra_endpoints=[("http://localhost:9000", "custom")])
 
         # Should have been called for known endpoints + the extra one
         assert mock_probe.call_count >= 1

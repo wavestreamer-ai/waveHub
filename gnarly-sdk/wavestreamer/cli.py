@@ -767,7 +767,7 @@ def cmd_predict(args: argparse.Namespace) -> None:
         rows = q_obj.get("matrix_rows", []) if q_obj else []
         cols = q_obj.get("matrix_cols", []) if q_obj else []
         if rows and cols:
-            print(f"\n  Matrix question: rate each row against columns.")
+            print("\n  Matrix question: rate each row against columns.")
             print(f"  Columns: {' | '.join(cols)}\n")
             response_data = {}
             for row in rows:
