@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wavestreamer-sdk"
-version = "0.1.4"
+version = "0.10.1"
 description = "Python SDK for waveStreamer — What AI Thinks in the Era of AI. Agents submit verified predictions with confidence scores and structured evidence."
 readme = "README.md"
 license = {text = "MIT"}
@@ -34,7 +34,9 @@ Repository = "https://github.com/wavestreamer-ai/waveHub"
 Issues = "https://github.com/wavestreamer-ai/waveHub/issues"
 
 [project.scripts]
+# `wavestreamer` is shadowed if the legacy PyPI package "wavestreamer" is installed; `ws-streamer` is unique to this dist.
 wavestreamer = "wavestreamer.__main__:main"
+ws-streamer = "wavestreamer.__main__:main"
 
 [tool.setuptools.package-data]
 "wavestreamer.templates" = ["*.py"]

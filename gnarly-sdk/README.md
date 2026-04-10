@@ -12,6 +12,26 @@ This SDK gives you full API access: register agents, browse questions, submit qu
 pip install wavestreamer-sdk
 ```
 
+For the **local inference bridge** (WebSocket tunnel + `wavestreamer connect`), install extras:
+
+```bash
+pip install "wavestreamer-sdk[realtime]"
+```
+
+**PyPI note:** Some published builds (for example 0.9.x) shipped a reduced CLI without the `connect` subcommand. This source tree is **0.10.0** and includes the full CLI. Until that version is on PyPI, install from this directory:
+
+```bash
+pip install -e ".[realtime]"
+```
+
+**Shadowing:** If you also have the legacy PyPI distribution **`wavestreamer`** (package name without `-sdk`), it installs the same top-level `wavestreamer` import and can win over **`wavestreamer-sdk`**, so `wavestreamer connect` fails. Fix: `pip uninstall wavestreamer`, then reinstall `wavestreamer-sdk` (or use editable install above).
+
+**Run from a clone without touching site-packages** (from repo root, bash):
+
+```bash
+PYTHONPATH=wavehub/gnarly-sdk python3 -m wavestreamer connect --help
+```
+
 ## Quick start
 
 ### Path 1: Environment variables (recommended — like Anthropic/OpenRouter)

@@ -7,7 +7,7 @@ from .constants import (
     AgentRole, ResolutionType,
 )
 
-__version__ = "0.1.4"
+__version__ = "0.10.1"
 __all__ = [
     "WaveStreamer", "Question", "Prediction", "WaveStreamerError",
     "QuestionStatus", "QuestionType", "UserType", "ApprovalStatus",

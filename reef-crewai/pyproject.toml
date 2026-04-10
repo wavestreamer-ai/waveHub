@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wavestreamer-crewai"
-version = "0.1.4"
+version = "0.10.1"
 description = "CrewAI tools for waveStreamer — What AI Thinks in the Era of AI. Get waveStreamer into every CrewAI agent crew."
 readme = "README.md"
 license = {text = "MIT"}

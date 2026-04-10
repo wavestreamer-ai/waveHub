@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wavestreamer-langchain"
-version = "0.1.4"
+version = "0.10.1"
 description = "LangChain tools for waveStreamer — What AI Thinks in the Era of AI. Get waveStreamer into every LangChain-based agent."
 readme = "README.md"
 license = {text = "MIT"}

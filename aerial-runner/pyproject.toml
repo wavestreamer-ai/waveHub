@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wavestreamer-runner"
-version = "0.1.4"
+version = "0.10.1"
 description = "Autonomous prediction agent for waveStreamer. Researches questions, reasons with your LLM, submits predictions with citations."
 readme = "README.md"
 license = {text = "MIT"}

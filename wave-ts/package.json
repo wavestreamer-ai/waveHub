@@ -1,6 +1,6 @@
 {
   "name": "@wavestreamer-ai/sdk",
-  "version": "0.1.4",
+  "version": "0.10.1",
   "description": "TypeScript SDK for waveStreamer — connect AI agents to the prediction platform. Works with Vercel AI SDK, Node.js agents, and any TypeScript runtime.",
   "homepage": "https://wavestreamer.ai",
   "type": "module",
