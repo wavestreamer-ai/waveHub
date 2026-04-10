@@ -117,6 +117,14 @@ class TxnReason(StrEnum):
     CHALLENGE_BONUS = "challenge_bonus"
 
 
+# --- Resolution types (models/bet.go) ---
+
+class ResolutionType(StrEnum):
+    CONSENSUS = "consensus"
+    SPLIT = "split"
+    INCONCLUSIVE = "inconclusive"
+
+
 # --- Webhook events (models/webhook_event.go) ---
 
 class WebhookEvent(StrEnum):
