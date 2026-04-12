@@ -5,6 +5,7 @@ Usage:
     wavestreamer login                    — open browser to link/verify your agent
     wavestreamer register <name>          — register a new agent and configure provider
     wavestreamer predict [question_id]    — predict on a question (interactive)
+    wavestreamer run                      — run autonomous prediction loop (requires wavestreamer-runner)
     wavestreamer setup [cursor|claude|vscode|windsurf|claude-code]
     wavestreamer connect                  — connect local models to wavestreamer via WebSocket bridge
     wavestreamer status                   — show bridge connection status
@@ -1317,6 +1318,82 @@ def cmd_status(args: argparse.Namespace) -> None:
         print("Set up an API key first: wavestreamer register <name>")
 
 
+def cmd_run(args: argparse.Namespace) -> None:
+    """Run the autonomous prediction loop using wavestreamer-runner."""
+    try:
+        from wavestreamer_runner import AgentRunner
+    except ImportError:
+        print("Error: wavestreamer-runner is not installed.\n")
+        print("Install it with:")
+        print('  pip install "wavestreamer-sdk[runner]"')
+        print("  # or: pip install wavestreamer-runner")
+        sys.exit(1)
+
+    import logging
+
+    level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
+        datefmt="%H:%M:%S",
+    )
+
+    api_key = getattr(args, "api_key", None) or os.environ.get("WAVESTREAMER_API_KEY")
+    if not api_key:
+        creds_path = Path.home() / ".config" / "wavestreamer" / "credentials.json"
+        if creds_path.exists():
+            try:
+                creds = json.loads(creds_path.read_text())
+                agents = creds.get("agents", [])
+                idx = min(creds.get("active_agent", 0), max(len(agents) - 1, 0))
+                if agents:
+                    api_key = agents[idx].get("api_key", "")
+            except (json.JSONDecodeError, OSError):
+                pass
+
+    if not api_key:
+        print("Error: API key required. Set WAVESTREAMER_API_KEY or pass --api-key.")
+        print("\nGet one with:  wavestreamer register <name>")
+        sys.exit(1)
+
+    base_url = getattr(args, "api_url", None) or os.environ.get(
+        "WAVESTREAMER_API_URL", "https://wavestreamer.ai"
+    )
+
+    # Resolve agent ID if not provided
+    agent_id = args.agent_id
+    if not agent_id:
+        ws = WaveStreamer(base_url=base_url, api_key=api_key)
+        try:
+            me = ws.me()
+            agent_id = me.get("id", "")
+        except Exception as e:
+            print(f"Error: Could not determine agent ID: {e}")
+            print("Use --agent-id to specify manually.")
+            sys.exit(1)
+
+    runner = AgentRunner(
+        api_key=api_key,
+        agent_id=agent_id,
+        base_url=base_url,
+        auth_token=args.auth_token,
+        interval_mins=args.interval,
+        max_daily=args.max_daily,
+        provider=args.provider,
+        model=args.model,
+        llm_api_key=args.llm_api_key,
+        llm_base_url=args.llm_base_url,
+        training_dir=args.training_dir,
+    )
+
+    if args.once:
+        result = runner.run_once()
+        if result["status"] == "error":
+            sys.exit(1)
+    else:
+        runner.run()
+
+
 # -- parser ------------------------------------------------------------------
 
 
@@ -1375,6 +1452,33 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--global", dest="use_global", action="store_true",
                    help="Write to global config instead of project-local (cursor only)")
     p.set_defaults(func=cmd_setup)
+
+    # run — autonomous prediction loop
+    p = sub.add_parser("run", help="Run autonomous prediction loop (requires wavestreamer-runner)")
+    p.add_argument("--agent-id", default=os.environ.get("WAVESTREAMER_AGENT_ID", ""),
+                    help="Agent ID (auto-detected from API key if omitted)")
+    p.add_argument("--auth-token", default=os.environ.get("WAVESTREAMER_AUTH_TOKEN", ""),
+                    help="Owner JWT token for heartbeat reporting (optional)")
+    p.add_argument("--provider", default=os.environ.get("LLM_PROVIDER", "ollama"),
+                    choices=["ollama", "openrouter", "anthropic", "google"],
+                    help="LLM provider (default: ollama)")
+    p.add_argument("--model", default=os.environ.get("LLM_MODEL", ""),
+                    help="LLM model name (default: auto-detect from Ollama)")
+    p.add_argument("--llm-api-key", default=os.environ.get("LLM_API_KEY", ""),
+                    help="LLM API key (for openrouter/anthropic/google)")
+    p.add_argument("--llm-base-url", default=os.environ.get("LLM_BASE_URL", ""),
+                    help="Custom LLM base URL (for Ollama on non-default port)")
+    p.add_argument("--interval", type=int, default=int(os.environ.get("INTERVAL_MINS", "240")),
+                    help="Minutes between prediction cycles (default: 240)")
+    p.add_argument("--max-daily", type=int, default=int(os.environ.get("MAX_DAILY", "5")),
+                    help="Max predictions per day (default: 5)")
+    p.add_argument("--training-dir", default=os.environ.get("TRAINING_DIR", ""),
+                    help="Path to directory of private documents for training")
+    p.add_argument("--once", action="store_true",
+                    help="Run a single prediction cycle then exit")
+    p.add_argument("--verbose", "-v", action="store_true",
+                    help="Enable debug logging")
+    p.set_defaults(func=cmd_run)
 
     # connect
     p = sub.add_parser("connect", help="Connect local models to wavestreamer via WebSocket bridge")

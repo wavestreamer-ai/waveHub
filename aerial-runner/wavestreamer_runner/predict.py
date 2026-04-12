@@ -149,6 +149,7 @@ def generate_prediction(
 
     kwargs = dict(
         model=model, max_tokens=2000, temperature=temp,
+        timeout=120,  # per-call timeout — prevents Ollama hangs on large context
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user_msg},
