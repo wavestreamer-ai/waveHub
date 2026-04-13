@@ -180,7 +180,44 @@ jobs:
             --server wavestreamer-ai/shaka-mcp \
             --url "https://wavestreamer.ai/mcp" \
             --scan-key "${{ secrets.WAVESTREAMER_SCAN_KEY }}" \
-            2>/dev/null || echo "::warning::Smithery publish skipped (set WAVESTREAMER_SCAN_KEY secret)"
+            2>/dev/null || echo "::warning::Smithery publish skipped"
+        continue-on-error: true
+
+      - name: Publish to MCP Registry (official)
+        run: |
+          # Install mcp-publisher CLI
+          curl -sL https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher-linux-amd64 -o /tmp/mcp-publisher
+          chmod +x /tmp/mcp-publisher
+
+          # Publish server.json (already has correct version + metadata)
+          cd shaka-mcp
+          /tmp/mcp-publisher publish 2>&1 || echo "::warning::MCP Registry publish skipped"
+        env:
+          MCP_REGISTRY_TOKEN: ${{ secrets.MCP_REGISTRY_TOKEN }}
+        continue-on-error: true
+
+      - name: Publish to OpenClaw/ClawHub
+        run: |
+          npx -y clawhub@latest sync \
+            --path docs/openclaw-skill.md \
+            2>/dev/null || echo "::warning::ClawHub publish skipped"
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Notify Glama
+        run: |
+          # Glama auto-indexes npm packages — ping their API to trigger re-index
+          curl -sS -X POST "https://glama.ai/api/mcp/v1/servers/@wavestreamer-ai/mcp/refresh" \
+            -H "Content-Type: application/json" \
+            2>/dev/null || echo "::warning::Glama refresh skipped"
+        continue-on-error: true
+
+      - name: Notify PulseMCP
+        run: |
+          # PulseMCP auto-crawls npm — ping to trigger faster re-index
+          curl -sS "https://www.pulsemcp.com/api/servers/@wavestreamer-ai/mcp/refresh" \
+            2>/dev/null || echo "::warning::PulseMCP refresh skipped"
         continue-on-error: true
 
   # ── Publish: quiver-langchain (PyPI) ────────────────────────────────────
