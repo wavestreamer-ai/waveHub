@@ -1,0 +1,86 @@
+name: PR Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # Block fork PRs from modifying CI/CD, secrets config, or publish scripts
+  fork-safety:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.fork == true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for sensitive file modifications
+        run: |
+          SENSITIVE_PATTERNS=(
+            ".github/workflows/"
+            "scripts/"
+            "Makefile"
+            "VERSION"
+            ".github/CODEOWNERS"
+          )
+
+          CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }})
+          BLOCKED=""
+
+          for pattern in "${SENSITIVE_PATTERNS[@]}"; do
+            MATCHES=$(echo "$CHANGED" | grep "^${pattern}" || true)
+            if [ -n "$MATCHES" ]; then
+              BLOCKED="${BLOCKED}${MATCHES}\n"
+            fi
+          done
+
+          if [ -n "$BLOCKED" ]; then
+            echo "::error::Fork PRs cannot modify CI/CD or release infrastructure:"
+            echo -e "$BLOCKED"
+            echo ""
+            echo "If you need to change these files, open an issue and a maintainer will handle it."
+            exit 1
+          fi
+
+          echo "Fork PR safety check passed"
+
+  # Ensure no secrets or keys are in the diff
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for leaked secrets
+        run: |
+          DIFF=$(git diff ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }})
+
+          # Patterns that should never appear in diffs
+          PATTERNS=(
+            'sk_[a-zA-Z0-9]{20,}'
+            'sk-ant-[a-zA-Z0-9]+'
+            'sk-or-[a-zA-Z0-9]+'
+            'pypi-[a-zA-Z0-9]+'
+            'npm_[a-zA-Z0-9]+'
+            'ghp_[a-zA-Z0-9]+'
+            'ghs_[a-zA-Z0-9]+'
+            'AKIA[0-9A-Z]{16}'
+            'AIza[a-zA-Z0-9_-]{35}'
+          )
+
+          FOUND=0
+          for pattern in "${PATTERNS[@]}"; do
+            if echo "$DIFF" | grep -P "$pattern" | grep -v "^-" | grep -v "test" | grep -v "example" | grep -v "sk_your" | grep -v "sk_..." > /dev/null 2>&1; then
+              echo "::error::Potential secret matching pattern '$pattern' found in diff"
+              FOUND=1
+            fi
+          done
+
+          if [ "$FOUND" = "1" ]; then
+            echo ""
+            echo "If these are test fixtures or examples, prefix them with 'sk_test_' or 'sk_example_'."
+            exit 1
+          fi
+
+          echo "No secrets detected in diff"

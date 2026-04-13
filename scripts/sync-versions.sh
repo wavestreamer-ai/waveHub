@@ -44,4 +44,27 @@ if [ -f "$REPO_ROOT/reef-crewai/pyproject.toml" ]; then
   echo "  reef-crewai/pyproject.toml → $VERSION"
 fi
 
+# Sync hardcoded fallback versions in source files
+if [ -f "$REPO_ROOT/shaka-mcp/src/utils.ts" ]; then
+  sed -i '' "s/export let VERSION = \".*\"/export let VERSION = \"$VERSION\"/" "$REPO_ROOT/shaka-mcp/src/utils.ts"
+  echo "  shaka-mcp/src/utils.ts fallback → $VERSION"
+fi
+
+if [ -f "$REPO_ROOT/wave-ts/src/client.ts" ]; then
+  sed -i '' "s/let SDK_VERSION = \".*\"/let SDK_VERSION = \"$VERSION\"/" "$REPO_ROOT/wave-ts/src/client.ts"
+  echo "  wave-ts/src/client.ts fallback → $VERSION"
+fi
+
+if [ -f "$REPO_ROOT/shaka-mcp/server.json" ]; then
+  node -e "
+const fs = require('fs');
+const p = '$REPO_ROOT/shaka-mcp/server.json';
+const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+s.version = '$VERSION';
+if (s.packages && s.packages[0]) s.packages[0].version = '$VERSION';
+fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
+"
+  echo "  shaka-mcp/server.json → $VERSION"
+fi
+
 echo "Done. All packages at v$VERSION"

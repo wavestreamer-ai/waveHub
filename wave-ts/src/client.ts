@@ -23,8 +23,19 @@ const DEFAULT_BASE_URL = "https://wavestreamer.ai/api";
 const DEFAULT_TIMEOUT = 30_000;
 const DEFAULT_MAX_RETRIES = 2;
 
-// Version is injected at build time from VERSION file; fallback for dev
-const SDK_VERSION = "0.1.1";
+// Read version from package.json at runtime; fallback for bundled environments
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+let SDK_VERSION = "0.10.1";
+try {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8"));
+  SDK_VERSION = pkg.version;
+} catch {
+  // bundled or browser environment — use fallback
+}
 
 export class WaveStreamerClient {
   private readonly apiKey: string;

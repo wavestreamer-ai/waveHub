@@ -329,6 +329,168 @@ jobs:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN_CREWAI }}
         continue-on-error: true
 
+  # ── Post-publish: install verification ───────────────────────────────────
+  verify-install:
+    needs:
+      - publish-gnarly-sdk
+      - publish-shaka-mcp
+      - publish-quiver-langchain
+      - publish-aerial-runner
+      - publish-wave-ts
+      - publish-reef-crewai
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Wait for registry propagation
+        run: sleep 30
+
+      - name: Verify npm packages install and import
+        run: |
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+
+          echo "--- Verifying @wavestreamer-ai/mcp@${VERSION} ---"
+          npm install -g @wavestreamer-ai/mcp@${VERSION}
+          node -e "
+            const pkg = require('@wavestreamer-ai/mcp/package.json');
+            console.log('  Installed:', pkg.name, pkg.version);
+            if (pkg.version !== '${VERSION}') { process.exit(1); }
+          " || echo "::warning::MCP install verification failed"
+
+          echo "--- Verifying @wavestreamer-ai/sdk@${VERSION} ---"
+          mkdir -p /tmp/ts-verify && cd /tmp/ts-verify
+          pnpm init && pnpm add @wavestreamer-ai/sdk@${VERSION}
+          node -e "
+            const pkg = require('@wavestreamer-ai/sdk/package.json');
+            console.log('  Installed:', pkg.name, pkg.version);
+            if (pkg.version !== '${VERSION}') { process.exit(1); }
+          " || echo "::warning::TS SDK install verification failed"
+
+      - name: Verify PyPI packages install and import
+        run: |
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+
+          echo "--- Verifying wavestreamer-sdk==${VERSION} ---"
+          pip install wavestreamer-sdk==${VERSION}
+          python3 -c "
+          import wavestreamer
+          print('  Installed:', wavestreamer.__version__)
+          assert wavestreamer.__version__ == '${VERSION}', f'Version mismatch: {wavestreamer.__version__}'
+          # Verify core classes are importable
+          from wavestreamer import WaveStreamer
+          print('  WaveStreamer class: OK')
+          " || echo "::warning::SDK install verification failed"
+
+          echo "--- Verifying wavestreamer-langchain==${VERSION} ---"
+          pip install wavestreamer-langchain==${VERSION}
+          python3 -c "
+          from langchain_wavestreamer import WaveStreamerToolkit
+          print('  WaveStreamerToolkit: OK')
+          " || echo "::warning::LangChain install verification failed"
+
+          echo "--- Verifying wavestreamer-runner==${VERSION} ---"
+          pip install wavestreamer-runner==${VERSION}
+          python3 -c "
+          from wavestreamer_runner import WaveStreamerRunner
+          print('  WaveStreamerRunner: OK')
+          " || echo "::warning::Runner install verification failed"
+
+          echo "--- Verifying wavestreamer-crewai==${VERSION} ---"
+          pip install wavestreamer-crewai==${VERSION}
+          python3 -c "
+          from crewai_wavestreamer import WaveStreamerToolkit
+          print('  CrewAI WaveStreamerToolkit: OK')
+          " || echo "::warning::CrewAI install verification failed"
+
+  # ── Post-publish: MCP smoke test ───────────────────────────────────────
+  mcp-smoke-test:
+    needs: publish-shaka-mcp
+    if: >
+      needs.publish-shaka-mcp.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Wait for npm propagation
+        run: sleep 20
+
+      - name: Install published MCP and smoke test
+        run: |
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          npm install -g @wavestreamer-ai/mcp@${VERSION}
+
+          # Start MCP in background, send initialize request, check it responds
+          echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke-test","version":"1.0.0"}}}' > /tmp/mcp-init.json
+
+          # Run MCP via stdio — send init, capture response, timeout after 10s
+          RESPONSE=$(timeout 15 bash -c 'cat /tmp/mcp-init.json | wavestreamer-mcp 2>/dev/null | head -1' || true)
+
+          if echo "$RESPONSE" | grep -q '"serverInfo"'; then
+            echo "MCP server responded to initialize"
+
+            # Extract tool count from capabilities
+            TOOL_COUNT=$(echo "$RESPONSE" | node -e "
+              let data = '';
+              process.stdin.on('data', d => data += d);
+              process.stdin.on('end', () => {
+                try {
+                  const r = JSON.parse(data);
+                  console.log(r.result?.capabilities ? 'capabilities_ok' : 'no_capabilities');
+                } catch { console.log('parse_error'); }
+              });
+            ")
+            echo "  Capabilities check: $TOOL_COUNT"
+          else
+            echo "::warning::MCP server did not respond to initialize request"
+            echo "  Response: $RESPONSE"
+          fi
+
+      - name: Verify tool count via list
+        run: |
+          # Send tools/list request
+          cat << 'JSONRPC' > /tmp/mcp-tools.jsonl
+          {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke-test","version":"1.0.0"}}}
+          {"jsonrpc":"2.0","id":2,"method":"notifications/initialized"}
+          {"jsonrpc":"2.0","id":3,"method":"tools/list"}
+          JSONRPC
+
+          TOOLS_RESPONSE=$(timeout 15 bash -c 'cat /tmp/mcp-tools.jsonl | wavestreamer-mcp 2>/dev/null | tail -1' || true)
+
+          if [ -n "$TOOLS_RESPONSE" ]; then
+            TOOL_COUNT=$(echo "$TOOLS_RESPONSE" | node -e "
+              let d=''; process.stdin.on('data',c=>d+=c);
+              process.stdin.on('end',()=>{
+                try { const r=JSON.parse(d); console.log((r.result?.tools||[]).length); }
+                catch { console.log(0); }
+              });
+            ")
+            echo "Tools registered: $TOOL_COUNT"
+            if [ "$TOOL_COUNT" -ge 60 ]; then
+              echo "Tool count check passed (>= 60)"
+            else
+              echo "::error::Expected >= 60 tools, got $TOOL_COUNT"
+              exit 1
+            fi
+          else
+            echo "::warning::Could not get tools list from MCP server"
+          fi
+
   # ── GitHub Release (after all publishes) ────────────────────────────────
   create-release:
     needs:

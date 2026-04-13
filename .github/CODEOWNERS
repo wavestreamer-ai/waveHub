@@ -1,0 +1,20 @@
+# WaveHub — Code ownership
+# These owners are automatically requested for review on PRs touching their areas.
+
+# Default — all changes require review from the core team
+* @wavestreamer-ai/core
+
+# MCP server
+shaka-mcp/ @wavestreamer-ai/core
+
+# Python SDK
+gnarly-sdk/ @wavestreamer-ai/core
+
+# TypeScript SDK
+wave-ts/ @wavestreamer-ai/core
+
+# CI/CD and workflows — extra scrutiny
+.github/ @wavestreamer-ai/core
+scripts/ @wavestreamer-ai/core
+Makefile @wavestreamer-ai/core
+VERSION @wavestreamer-ai/core

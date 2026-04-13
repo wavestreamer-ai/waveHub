@@ -47,6 +47,44 @@ jobs:
           fi
           echo "All versions match"
 
+  # ── Security scanning ──────────────────────────────────────────────────
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: npm audit (MCP)
+        run: |
+          cd shaka-mcp && pnpm install --frozen-lockfile
+          pnpm audit --audit-level=high || echo "::warning::npm audit found issues in shaka-mcp"
+
+      - name: npm audit (TS SDK)
+        run: |
+          cd wave-ts && pnpm install --frozen-lockfile
+          pnpm audit --audit-level=high || echo "::warning::npm audit found issues in wave-ts"
+
+      - name: pip-audit (Python packages)
+        run: |
+          pip install pip-audit
+          for pkg in gnarly-sdk quiver-langchain aerial-runner reef-crewai; do
+            echo "--- Auditing $pkg ---"
+            cd $pkg
+            pip install -e . 2>/dev/null || true
+            pip-audit --strict --desc 2>/dev/null || echo "::warning::pip-audit found issues in $pkg"
+            cd ..
+          done
+
   # ── Python lint (matrix) ────────────────────────────────────────────────
   python-lint:
     runs-on: ubuntu-latest
@@ -59,6 +97,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
       - run: pip install ruff
       - run: cd ${{ matrix.package }} && ruff check .
 
@@ -68,12 +107,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [gnarly-sdk, quiver-langchain, reef-crewai]
+        package: [gnarly-sdk, quiver-langchain, reef-crewai, aerial-runner]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
       - name: Install and test
         run: |
           cd ${{ matrix.package }}
@@ -89,47 +129,55 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
       - uses: pnpm/action-setup@v4
         with:
           version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: shaka-mcp/pnpm-lock.yaml
       - run: cd shaka-mcp && pnpm install --frozen-lockfile && pnpm run lint
 
   mcp-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
       - uses: pnpm/action-setup@v4
         with:
           version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: shaka-mcp/pnpm-lock.yaml
       - run: cd shaka-mcp && pnpm install --frozen-lockfile && pnpm run build
 
   mcp-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
       - uses: pnpm/action-setup@v4
         with:
           version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: shaka-mcp/pnpm-lock.yaml
       - run: cd shaka-mcp && pnpm install --frozen-lockfile && pnpm run build && pnpm run test
 
-  # ── TypeScript SDK: build ───────────────────────────────────────────────
-  ts-sdk-build:
+  # ── TypeScript SDK: build + test ─────────────────────────────────────────
+  ts-sdk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-      - run: cd wave-ts && pnpm install --frozen-lockfile && pnpm run build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: wave-ts/pnpm-lock.yaml
+      - run: cd wave-ts && pnpm install --frozen-lockfile && pnpm run build && pnpm run test
