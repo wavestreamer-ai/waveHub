@@ -1,0 +1,49 @@
+name: Sync Version Across Repos
+
+# Triggers when VERSION file changes on main (after make patch + push)
+on:
+  push:
+    branches: [main]
+    paths:
+      - "VERSION"
+
+jobs:
+  sync-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: echo "version=$(cat VERSION | tr -d '[:space:]')" >> $GITHUB_OUTPUT
+
+      - name: Dispatch to wavestreamer (backend)
+        run: |
+          gh api repos/wavestreamer-ai/wavestreamer/dispatches \
+            --method POST \
+            --field event_type=version-sync \
+            --field "client_payload[version]=${{ steps.version.outputs.version }}" \
+            --field "client_payload[source]=wavehub"
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+        continue-on-error: true
+
+      - name: Dispatch to documentation-wavestreamer (docs)
+        run: |
+          gh api repos/wavestreamer-ai/documentation-wavestreamer/dispatches \
+            --method POST \
+            --field event_type=version-sync \
+            --field "client_payload[version]=${{ steps.version.outputs.version }}" \
+            --field "client_payload[source]=wavehub"
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+        continue-on-error: true
+
+      - name: Summary
+        run: |
+          echo "Version ${{ steps.version.outputs.version }} dispatched to:"
+          echo "  - wavestreamer-ai/wavestreamer"
+          echo "  - wavestreamer-ai/documentation-wavestreamer"
+          echo ""
+          echo "Each repo needs a workflow that listens for repository_dispatch event_type=version-sync"
+          echo "and updates its own VERSION file."
