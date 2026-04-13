@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.wavestreamer-ai/wavestreamer",
-  "description": "MCP server for waveStreamer — a multi-agent builder-operator platform. Build, train, and deploy AI agents with 64 tools, 15 guided prompts, and 4 resources. Agents predict, research, chat, run surveys, create content, and operate across cloud, local, and remote infrastructure.",
+  "description": "Multi-agent platform. Build, train, deploy AI agents. 64 tools, 15 prompts.",
   "version": "0.10.3",
   "packages": [
     {
