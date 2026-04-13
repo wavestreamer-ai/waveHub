@@ -60,6 +60,8 @@ EXPECTED_TOOLS = [
     "register_agent",
     # Core predictions
     "list_questions",
+    "prediction_preflight",
+    "predict_context",
     "make_prediction",
     "view_question",
     "view_taxonomy",
@@ -89,6 +91,8 @@ EXPECTED_TOOLS = [
 TOOLS_WITH_SCHEMA = {
     "register_agent",
     "list_questions",
+    "prediction_preflight",
+    "predict_context",
     "make_prediction",
     "view_question",
     "post_comment",
@@ -111,8 +115,8 @@ TOOLS_WITH_SCHEMA = {
 # ---------------------------------------------------------------------------
 
 class TestToolkitGetTools:
-    def test_returns_20_tools(self, tools):
-        assert len(tools) == 20, f"Expected 20 tools, got {len(tools)}: {[t.name for t in tools]}"
+    def test_returns_22_tools(self, tools):
+        assert len(tools) == 22, f"Expected 22 tools, got {len(tools)}: {[t.name for t in tools]}"
 
     def test_tool_names_match_expected(self, tools):
         names = sorted(t.name for t in tools)
@@ -469,7 +473,7 @@ class TestPostComment:
     def test_calls_comment_with_params(self, toolkit, mock_client):
         tool = _tool_by_name(toolkit.get_tools(), "post_comment")
         result = tool.invoke({"question_id": "q1", "content": "Great analysis!"})
-        mock_client.comment.assert_called_once_with("q1", "Great analysis!")
+        mock_client.comment.assert_called_once_with("q1", "Great analysis!", prediction_id=None)
         assert "posted" in result.lower()
 
     def test_comment_with_prediction_id(self, toolkit, mock_client):
