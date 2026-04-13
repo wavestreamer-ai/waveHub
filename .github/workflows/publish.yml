@@ -67,6 +67,26 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_SDK }}
+      - name: Yank old PyPI versions
+        run: |
+          CURRENT=$(cat VERSION | tr -d '[:space:]')
+          pip install requests
+          python3 -c "
+          import requests, json
+          pkg = 'wavestreamer-sdk'
+          current = '$CURRENT'
+          token = '${{ secrets.PYPI_TOKEN_SDK }}'
+          r = requests.get(f'https://pypi.org/pypi/{pkg}/json')
+          if r.ok:
+              for ver in r.json().get('releases', {}):
+                  if ver != current:
+                      resp = requests.post(
+                          f'https://pypi.org/manage/project/{pkg}/release/{ver}/yank/',
+                          headers={'Authorization': f'token {token}'},
+                          data={'yanked_reason': f'Outdated. Upgrade to {current}: pip install {pkg}'}
+                      )
+                      print(f'Yank {ver}: {resp.status_code}')
+          " 2>/dev/null || echo "PyPI yank skipped (non-critical)"
 
   publish-shaka-mcp:
     needs: test
@@ -84,6 +104,16 @@ jobs:
         with:
           version: 10
       - run: cd shaka-mcp && pnpm install --frozen-lockfile && pnpm run build && pnpm publish --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Deprecate old npm versions
+        run: |
+          CURRENT=$(cat VERSION | tr -d '[:space:]')
+          for ver in $(npm view @wavestreamer-ai/mcp versions --json 2>/dev/null | jq -r '.[]' 2>/dev/null); do
+            if [ "$ver" != "$CURRENT" ]; then
+              npm deprecate "@wavestreamer-ai/mcp@$ver" "Outdated. Upgrade to $CURRENT: npx @wavestreamer-ai/mcp" 2>/dev/null || true
+            fi
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -104,6 +134,26 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_LANGCHAIN }}
+      - name: Yank old PyPI versions
+        run: |
+          CURRENT=$(cat VERSION | tr -d '[:space:]')
+          pip install requests
+          python3 -c "
+          import requests
+          pkg = 'wavestreamer-langchain'
+          current = '$CURRENT'
+          token = '${{ secrets.PYPI_TOKEN_LANGCHAIN }}'
+          r = requests.get(f'https://pypi.org/pypi/{pkg}/json')
+          if r.ok:
+              for ver in r.json().get('releases', {}):
+                  if ver != current:
+                      resp = requests.post(
+                          f'https://pypi.org/manage/project/{pkg}/release/{ver}/yank/',
+                          headers={'Authorization': f'token {token}'},
+                          data={'yanked_reason': f'Outdated. Upgrade to {current}: pip install {pkg}'}
+                      )
+                      print(f'Yank {ver}: {resp.status_code}')
+          " 2>/dev/null || echo "PyPI yank skipped (non-critical)"
 
   publish-aerial-runner:
     needs: test
@@ -122,6 +172,26 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_RUNNER }}
+      - name: Yank old PyPI versions
+        run: |
+          CURRENT=$(cat VERSION | tr -d '[:space:]')
+          pip install requests
+          python3 -c "
+          import requests
+          pkg = 'wavestreamer-runner'
+          current = '$CURRENT'
+          token = '${{ secrets.PYPI_TOKEN_RUNNER }}'
+          r = requests.get(f'https://pypi.org/pypi/{pkg}/json')
+          if r.ok:
+              for ver in r.json().get('releases', {}):
+                  if ver != current:
+                      resp = requests.post(
+                          f'https://pypi.org/manage/project/{pkg}/release/{ver}/yank/',
+                          headers={'Authorization': f'token {token}'},
+                          data={'yanked_reason': f'Outdated. Upgrade to {current}: pip install {pkg}'}
+                      )
+                      print(f'Yank {ver}: {resp.status_code}')
+          " 2>/dev/null || echo "PyPI yank skipped (non-critical)"
 
   publish-wave-ts:
     needs: test
@@ -139,6 +209,16 @@ jobs:
         with:
           version: 10
       - run: cd wave-ts && pnpm install --frozen-lockfile && pnpm run build && pnpm publish --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Deprecate old npm versions
+        run: |
+          CURRENT=$(cat VERSION | tr -d '[:space:]')
+          for ver in $(npm view @wavestreamer-ai/sdk versions --json 2>/dev/null | jq -r '.[]' 2>/dev/null); do
+            if [ "$ver" != "$CURRENT" ]; then
+              npm deprecate "@wavestreamer-ai/sdk@$ver" "Outdated. Upgrade to $CURRENT: npm install @wavestreamer-ai/sdk" 2>/dev/null || true
+            fi
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -159,3 +239,23 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_CREWAI }}
+      - name: Yank old PyPI versions
+        run: |
+          CURRENT=$(cat VERSION | tr -d '[:space:]')
+          pip install requests
+          python3 -c "
+          import requests
+          pkg = 'wavestreamer-crewai'
+          current = '$CURRENT'
+          token = '${{ secrets.PYPI_TOKEN_CREWAI }}'
+          r = requests.get(f'https://pypi.org/pypi/{pkg}/json')
+          if r.ok:
+              for ver in r.json().get('releases', {}):
+                  if ver != current:
+                      resp = requests.post(
+                          f'https://pypi.org/manage/project/{pkg}/release/{ver}/yank/',
+                          headers={'Authorization': f'token {token}'},
+                          data={'yanked_reason': f'Outdated. Upgrade to {current}: pip install {pkg}'}
+                      )
+                      print(f'Yank {ver}: {resp.status_code}')
+          " 2>/dev/null || echo "PyPI yank skipped (non-critical)"
