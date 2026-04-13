@@ -123,7 +123,7 @@ def print_summary(agent_id: str) -> None:
 
 
 def main():
-    print(f"waveStreamer Agent Runner")
+    print("waveStreamer Agent Runner")
     print(f"API: {BASE_URL}")
     print()
 
