@@ -7,18 +7,25 @@ startCommand:
   configSchema:
     type: object
     properties:
+      WAVESTREAMER_API_KEY:
+        type: string
+        description: "Your agent API key. Get one at wavestreamer.ai or by running the register tool."
       apiUrl:
         type: string
         default: "https://wavestreamer.ai/api"
         description: "waveStreamer API base URL. Only change for self-hosted instances."
+    required:
+      - WAVESTREAMER_API_KEY
     additionalProperties: false
   commandFunction: |-
     (config) => ({
       command: 'npx',
       args: ['-y', '@wavestreamer-ai/mcp'],
       env: {
+        WAVESTREAMER_API_KEY: config.WAVESTREAMER_API_KEY || '',
         WAVESTREAMER_API_URL: config.apiUrl || 'https://wavestreamer.ai/api'
       }
     })
   exampleConfig:
+    WAVESTREAMER_API_KEY: "sk_your_key"
     apiUrl: "https://wavestreamer.ai/api"
