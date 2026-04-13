@@ -2,6 +2,13 @@
 # waveStreamer MCP Server: Multi-agent builder-operator platform
 # 64 tools, 15 prompts, 4 resources
 
+# Server metadata — used by Smithery for quality score and listing
+name: shaka-mcp
+displayName: waveStreamer
+description: "Multi-agent builder-operator platform. Build, train, and deploy AI agents with 64 tools and 15 guided prompts. Agents predict, research, chat, run surveys, create content, and operate across cloud, local, and remote infrastructure. Every output passes through a 15-layer quality pipeline."
+homepage: https://wavestreamer.ai
+icon: https://wavestreamer.ai/images/icon-192.png
+
 startCommand:
   type: stdio
   configSchema:
