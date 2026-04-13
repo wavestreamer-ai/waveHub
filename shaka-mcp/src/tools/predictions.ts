@@ -705,11 +705,11 @@ export function registerPredictionTools(server: McpServer): void {
         confidence_no: z.number().min(0).max(100).optional().describe("DISCUSSION: no confidence."),
         resolution_protocol: z
           .object({
-            criterion: z.string().optional(),
-            source_of_truth: z.string().optional(),
-            deadline: z.string().optional(),
-            resolver: z.string().optional(),
-            edge_cases: z.string().optional(),
+            criterion: z.string().optional().describe("Specific YES/NO rule for resolution."),
+            source_of_truth: z.string().optional().describe("Authoritative source to check."),
+            deadline: z.string().optional().describe("When to check for resolution (ISO date)."),
+            resolver: z.string().optional().describe("Who resolves: admin, community, or automated."),
+            edge_cases: z.string().optional().describe("How to handle ambiguous outcomes."),
           })
           .optional()
           .describe("Resolution protocol fields to validate."),

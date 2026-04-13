@@ -13,7 +13,17 @@ export function registerOrgTools(server: McpServer): void {
       title: "My Organizations",
       description: "List organizations you belong to. Returns org names, slugs, plans, and member counts.",
       inputSchema: {
-        api_key: z.string().optional().describe("Agent API key (uses env if omitted)"),
+        api_key: z
+          .string()
+          .optional()
+          .describe("Agent API key (sk_...). Auto-detected from WAVESTREAMER_API_KEY env var if not provided."),
+      },
+      annotations: {
+        title: "My Organizations",
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
     },
     async (params) => {
@@ -31,8 +41,18 @@ export function registerOrgTools(server: McpServer): void {
       title: "Organization Surveys",
       description: "List surveys scoped to an organization. Shows surveys shared with the org by members.",
       inputSchema: {
-        api_key: z.string().optional().describe("Agent API key"),
-        org_id: z.string().describe("Organization ID"),
+        api_key: z
+          .string()
+          .optional()
+          .describe("Agent API key (sk_...). Auto-detected from WAVESTREAMER_API_KEY env var if not provided."),
+        org_id: z.string().describe("Organization ID (UUID from my_orgs)."),
+      },
+      annotations: {
+        title: "Organization Surveys",
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
     },
     async (params) => {
@@ -48,10 +68,20 @@ export function registerOrgTools(server: McpServer): void {
     "org_questions",
     {
       title: "Organization Questions",
-      description: "List questions scoped to an organization.",
+      description: "List questions scoped to an organization. Shows private org-only questions created by members.",
       inputSchema: {
-        api_key: z.string().optional().describe("Agent API key"),
-        org_id: z.string().describe("Organization ID"),
+        api_key: z
+          .string()
+          .optional()
+          .describe("Agent API key (sk_...). Auto-detected from WAVESTREAMER_API_KEY env var if not provided."),
+        org_id: z.string().describe("Organization ID (UUID from my_orgs)."),
+      },
+      annotations: {
+        title: "Organization Questions",
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
     },
     async (params) => {
@@ -67,10 +97,21 @@ export function registerOrgTools(server: McpServer): void {
     "org_consensus",
     {
       title: "Organization Consensus",
-      description: "View recent consensus snapshots across all org questions. Shows how collective opinion is shifting within the organization.",
+      description:
+        "View recent consensus snapshots across all org questions. Shows how collective opinion is shifting within the organization.",
       inputSchema: {
-        api_key: z.string().optional().describe("Agent API key"),
-        org_id: z.string().describe("Organization ID"),
+        api_key: z
+          .string()
+          .optional()
+          .describe("Agent API key (sk_...). Auto-detected from WAVESTREAMER_API_KEY env var if not provided."),
+        org_id: z.string().describe("Organization ID (UUID from my_orgs)."),
+      },
+      annotations: {
+        title: "Organization Consensus",
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
     },
     async (params) => {
@@ -86,10 +127,21 @@ export function registerOrgTools(server: McpServer): void {
     "org_members",
     {
       title: "Organization Members",
-      description: "List members of an organization with their roles (owner, admin, editor, member, viewer).",
+      description:
+        "List members of an organization with their roles (owner, admin, editor, member, viewer).",
       inputSchema: {
-        api_key: z.string().optional().describe("Agent API key"),
-        org_id: z.string().describe("Organization ID"),
+        api_key: z
+          .string()
+          .optional()
+          .describe("Agent API key (sk_...). Auto-detected from WAVESTREAMER_API_KEY env var if not provided."),
+        org_id: z.string().describe("Organization ID (UUID from my_orgs)."),
+      },
+      annotations: {
+        title: "Organization Members",
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
     },
     async (params) => {
@@ -105,17 +157,30 @@ export function registerOrgTools(server: McpServer): void {
     "org_survey_results",
     {
       title: "Organization Survey Results",
-      description: "View aggregated results for a specific org survey. Includes per-question consensus, model breakdown, and analytics.",
+      description:
+        "View aggregated results for a specific org survey. Includes per-question consensus, model breakdown, and analytics.",
       inputSchema: {
-        api_key: z.string().optional().describe("Agent API key"),
-        org_id: z.string().describe("Organization ID"),
-        survey_id: z.string().describe("Survey ID"),
+        api_key: z
+          .string()
+          .optional()
+          .describe("Agent API key (sk_...). Auto-detected from WAVESTREAMER_API_KEY env var if not provided."),
+        org_id: z.string().describe("Organization ID (UUID from my_orgs)."),
+        survey_id: z.string().describe("Survey ID (UUID from org_surveys)."),
+      },
+      annotations: {
+        title: "Organization Survey Results",
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
     },
     async (params) => {
       const key = resolveApiKey(params.api_key);
       if (!key) return fail("API key required");
-      const res = await apiRequest("GET", `/orgs/${params.org_id}/surveys/${params.survey_id}/results`, { apiKey: key });
+      const res = await apiRequest("GET", `/orgs/${params.org_id}/surveys/${params.survey_id}/results`, {
+        apiKey: key,
+      });
       return ok(json(res));
     },
   );
