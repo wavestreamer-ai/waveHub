@@ -25,7 +25,7 @@ on:
           - all
 
 jobs:
-  # ── Test before publishing ────────────────────────────────────────────
+  # ── Full test suite (must pass before any publish) ──────────────────────
   test:
     runs-on: ubuntu-latest
     steps:
@@ -39,17 +39,70 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-      - name: Lint + build MCP
-        run: cd shaka-mcp && pnpm install --frozen-lockfile && pnpm run build && pnpm run lint
-      - name: Lint SDK
-        run: pip install ruff && cd gnarly-sdk && ruff check .
-      - name: Test SDK
+
+      # Python
+      - name: Install Python test deps
+        run: pip install ruff pytest
+
+      - name: Lint Python packages
+        run: |
+          cd gnarly-sdk && ruff check . && cd ..
+          cd quiver-langchain && ruff check . && cd ..
+          cd reef-crewai && ruff check . && cd ..
+          cd aerial-runner && ruff check . && cd ..
+
+      - name: Test gnarly-sdk
         run: |
           cd gnarly-sdk
           pip install -e ".[dev]" 2>/dev/null || pip install -e .
           if [ -d tests ]; then python -m pytest tests/ -v; fi
 
-  # ── Publish packages (runs after tests pass) ──────────────────────────
+      - name: Test quiver-langchain
+        run: |
+          cd quiver-langchain
+          pip install -e ".[dev]" 2>/dev/null || pip install -e . 2>/dev/null || true
+          if [ -d tests ] && command -v pytest &>/dev/null; then python -m pytest tests/ -v; fi
+
+      - name: Test reef-crewai
+        run: |
+          cd reef-crewai
+          pip install -e ".[dev]" 2>/dev/null || pip install -e . 2>/dev/null || true
+          if [ -d tests ] && command -v pytest &>/dev/null; then python -m pytest tests/ -v; fi
+
+      # Node — MCP
+      - name: Lint + build + test MCP
+        run: |
+          cd shaka-mcp
+          pnpm install --frozen-lockfile
+          pnpm run lint
+          pnpm run build
+          pnpm run test
+
+      # Node — TS SDK
+      - name: Build TypeScript SDK
+        run: |
+          cd wave-ts
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      # Version check
+      - name: Check version consistency
+        run: |
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          MCP_JSON=$(node -e "console.log(require('./shaka-mcp/package.json').version)")
+          TS_JSON=$(node -e "console.log(require('./wave-ts/package.json').version)")
+          SDK_TOML=$(grep '^version' gnarly-sdk/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          FAIL=0
+          for v in "$MCP_JSON" "$TS_JSON" "$SDK_TOML"; do
+            if [ "$v" != "$VERSION" ]; then
+              echo "ERROR: $v != $VERSION"
+              FAIL=1
+            fi
+          done
+          [ "$FAIL" = "0" ] && echo "All versions match: $VERSION"
+          [ "$FAIL" = "1" ] && exit 1 || true
+
+  # ── Publish: gnarly-sdk (PyPI) ──────────────────────────────────────────
   publish-gnarly-sdk:
     needs: test
     if: >
@@ -71,23 +124,27 @@ jobs:
         run: |
           CURRENT=$(cat VERSION | tr -d '[:space:]')
           pip install requests
-          python3 -c "
-          import requests, json
-          pkg = 'wavestreamer-sdk'
-          current = '$CURRENT'
-          token = '${{ secrets.PYPI_TOKEN_SDK }}'
-          r = requests.get(f'https://pypi.org/pypi/{pkg}/json')
+          python3 << 'PYEOF'
+          import requests, os
+          pkg = "wavestreamer-sdk"
+          current = os.popen("cat VERSION | tr -d '[:space:]'").read().strip()
+          token = os.environ.get("PYPI_TOKEN", "")
+          r = requests.get(f"https://pypi.org/pypi/{pkg}/json")
           if r.ok:
-              for ver in r.json().get('releases', {}):
+              for ver in r.json().get("releases", {}):
                   if ver != current:
                       resp = requests.post(
-                          f'https://pypi.org/manage/project/{pkg}/release/{ver}/yank/',
-                          headers={'Authorization': f'token {token}'},
-                          data={'yanked_reason': f'Outdated. Upgrade to {current}: pip install {pkg}'}
+                          f"https://pypi.org/manage/project/{pkg}/release/{ver}/yank/",
+                          headers={"Authorization": f"token {token}"},
+                          data={"yanked_reason": f"Outdated. Upgrade to {current}: pip install {pkg}"},
                       )
-                      print(f'Yank {ver}: {resp.status_code}')
-          " 2>/dev/null || echo "PyPI yank skipped (non-critical)"
+                      print(f"  Yank {pkg}@{ver}: {resp.status_code}")
+          PYEOF
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN_SDK }}
+        continue-on-error: true
 
+  # ── Publish: shaka-mcp (npm) ────────────────────────────────────────────
   publish-shaka-mcp:
     needs: test
     if: >
@@ -116,7 +173,9 @@ jobs:
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        continue-on-error: true
 
+  # ── Publish: quiver-langchain (PyPI) ────────────────────────────────────
   publish-quiver-langchain:
     needs: test
     if: >
@@ -136,25 +195,28 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_LANGCHAIN }}
       - name: Yank old PyPI versions
         run: |
-          CURRENT=$(cat VERSION | tr -d '[:space:]')
           pip install requests
-          python3 -c "
-          import requests
-          pkg = 'wavestreamer-langchain'
-          current = '$CURRENT'
-          token = '${{ secrets.PYPI_TOKEN_LANGCHAIN }}'
-          r = requests.get(f'https://pypi.org/pypi/{pkg}/json')
+          python3 << 'PYEOF'
+          import requests, os
+          pkg = "wavestreamer-langchain"
+          current = os.popen("cat VERSION | tr -d '[:space:]'").read().strip()
+          token = os.environ.get("PYPI_TOKEN", "")
+          r = requests.get(f"https://pypi.org/pypi/{pkg}/json")
           if r.ok:
-              for ver in r.json().get('releases', {}):
+              for ver in r.json().get("releases", {}):
                   if ver != current:
                       resp = requests.post(
-                          f'https://pypi.org/manage/project/{pkg}/release/{ver}/yank/',
-                          headers={'Authorization': f'token {token}'},
-                          data={'yanked_reason': f'Outdated. Upgrade to {current}: pip install {pkg}'}
+                          f"https://pypi.org/manage/project/{pkg}/release/{ver}/yank/",
+                          headers={"Authorization": f"token {token}"},
+                          data={"yanked_reason": f"Outdated. Upgrade to {current}: pip install {pkg}"},
                       )
-                      print(f'Yank {ver}: {resp.status_code}')
-          " 2>/dev/null || echo "PyPI yank skipped (non-critical)"
+                      print(f"  Yank {pkg}@{ver}: {resp.status_code}")
+          PYEOF
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN_LANGCHAIN }}
+        continue-on-error: true
 
+  # ── Publish: aerial-runner (PyPI) ───────────────────────────────────────
   publish-aerial-runner:
     needs: test
     if: >
@@ -174,25 +236,28 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_RUNNER }}
       - name: Yank old PyPI versions
         run: |
-          CURRENT=$(cat VERSION | tr -d '[:space:]')
           pip install requests
-          python3 -c "
-          import requests
-          pkg = 'wavestreamer-runner'
-          current = '$CURRENT'
-          token = '${{ secrets.PYPI_TOKEN_RUNNER }}'
-          r = requests.get(f'https://pypi.org/pypi/{pkg}/json')
+          python3 << 'PYEOF'
+          import requests, os
+          pkg = "wavestreamer-runner"
+          current = os.popen("cat VERSION | tr -d '[:space:]'").read().strip()
+          token = os.environ.get("PYPI_TOKEN", "")
+          r = requests.get(f"https://pypi.org/pypi/{pkg}/json")
           if r.ok:
-              for ver in r.json().get('releases', {}):
+              for ver in r.json().get("releases", {}):
                   if ver != current:
                       resp = requests.post(
-                          f'https://pypi.org/manage/project/{pkg}/release/{ver}/yank/',
-                          headers={'Authorization': f'token {token}'},
-                          data={'yanked_reason': f'Outdated. Upgrade to {current}: pip install {pkg}'}
+                          f"https://pypi.org/manage/project/{pkg}/release/{ver}/yank/",
+                          headers={"Authorization": f"token {token}"},
+                          data={"yanked_reason": f"Outdated. Upgrade to {current}: pip install {pkg}"},
                       )
-                      print(f'Yank {ver}: {resp.status_code}')
-          " 2>/dev/null || echo "PyPI yank skipped (non-critical)"
+                      print(f"  Yank {pkg}@{ver}: {resp.status_code}")
+          PYEOF
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN_RUNNER }}
+        continue-on-error: true
 
+  # ── Publish: wave-ts (npm) ──────────────────────────────────────────────
   publish-wave-ts:
     needs: test
     if: >
@@ -221,7 +286,9 @@ jobs:
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        continue-on-error: true
 
+  # ── Publish: reef-crewai (PyPI) ─────────────────────────────────────────
   publish-reef-crewai:
     needs: test
     if: >
@@ -241,21 +308,61 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_CREWAI }}
       - name: Yank old PyPI versions
         run: |
-          CURRENT=$(cat VERSION | tr -d '[:space:]')
           pip install requests
-          python3 -c "
-          import requests
-          pkg = 'wavestreamer-crewai'
-          current = '$CURRENT'
-          token = '${{ secrets.PYPI_TOKEN_CREWAI }}'
-          r = requests.get(f'https://pypi.org/pypi/{pkg}/json')
+          python3 << 'PYEOF'
+          import requests, os
+          pkg = "wavestreamer-crewai"
+          current = os.popen("cat VERSION | tr -d '[:space:]'").read().strip()
+          token = os.environ.get("PYPI_TOKEN", "")
+          r = requests.get(f"https://pypi.org/pypi/{pkg}/json")
           if r.ok:
-              for ver in r.json().get('releases', {}):
+              for ver in r.json().get("releases", {}):
                   if ver != current:
                       resp = requests.post(
-                          f'https://pypi.org/manage/project/{pkg}/release/{ver}/yank/',
-                          headers={'Authorization': f'token {token}'},
-                          data={'yanked_reason': f'Outdated. Upgrade to {current}: pip install {pkg}'}
+                          f"https://pypi.org/manage/project/{pkg}/release/{ver}/yank/",
+                          headers={"Authorization": f"token {token}"},
+                          data={"yanked_reason": f"Outdated. Upgrade to {current}: pip install {pkg}"},
                       )
-                      print(f'Yank {ver}: {resp.status_code}')
-          " 2>/dev/null || echo "PyPI yank skipped (non-critical)"
+                      print(f"  Yank {pkg}@{ver}: {resp.status_code}")
+          PYEOF
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN_CREWAI }}
+        continue-on-error: true
+
+  # ── GitHub Release (after all publishes) ────────────────────────────────
+  create-release:
+    needs:
+      - publish-gnarly-sdk
+      - publish-shaka-mcp
+      - publish-quiver-langchain
+      - publish-aerial-runner
+      - publish-wave-ts
+      - publish-reef-crewai
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        run: |
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+
+          # Collect which packages were published
+          BODY="## Published packages at v${VERSION}\n\n"
+          BODY+="| Package | Registry | Install |\n"
+          BODY+="|---------|----------|---------|\n"
+          BODY+="| \`@wavestreamer-ai/mcp\` | npm | \`npx @wavestreamer-ai/mcp\` |\n"
+          BODY+="| \`@wavestreamer-ai/sdk\` | npm | \`npm install @wavestreamer-ai/sdk\` |\n"
+          BODY+="| \`wavestreamer-sdk\` | PyPI | \`pip install wavestreamer-sdk\` |\n"
+          BODY+="| \`wavestreamer-langchain\` | PyPI | \`pip install wavestreamer-langchain\` |\n"
+          BODY+="| \`wavestreamer-runner\` | PyPI | \`pip install wavestreamer-runner\` |\n"
+          BODY+="| \`wavestreamer-crewai\` | PyPI | \`pip install wavestreamer-crewai\` |\n"
+          BODY+="\nSee [CHANGELOG.md](CHANGELOG.md) for details."
+
+          # Create release (skip if it already exists)
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes "$(echo -e "$BODY")" \
+            --latest \
+            2>/dev/null || echo "Release v${VERSION} already exists"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

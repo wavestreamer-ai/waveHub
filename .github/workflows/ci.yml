@@ -7,38 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  python-lint:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        package: [gnarly-sdk, quiver-langchain, reef-crewai]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install ruff
-      - run: cd ${{ matrix.package }} && ruff check .
-
-  python-test:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        package: [gnarly-sdk, quiver-langchain, reef-crewai]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: |
-          cd ${{ matrix.package }}
-          pip install -e ".[dev]" 2>/dev/null || pip install -e . 2>/dev/null || echo "No installable package yet"
-          if command -v pytest &>/dev/null && [ -d tests ]; then
-            pytest -v
-          fi
-
+  # ── Version consistency ─────────────────────────────────────────────────
   version-check:
     runs-on: ubuntu-latest
     steps:
@@ -76,7 +45,57 @@ jobs:
             echo "Run: make sync-versions"
             exit 1
           fi
-          echo "All versions match ✓"
+          echo "All versions match"
+
+  # ── Python lint (matrix) ────────────────────────────────────────────────
+  python-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [gnarly-sdk, quiver-langchain, reef-crewai, aerial-runner]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: cd ${{ matrix.package }} && ruff check .
+
+  # ── Python test (matrix) ────────────────────────────────────────────────
+  python-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [gnarly-sdk, quiver-langchain, reef-crewai]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install and test
+        run: |
+          cd ${{ matrix.package }}
+          pip install -e ".[dev]" 2>/dev/null || pip install -e . 2>/dev/null || echo "No installable package"
+          if command -v pytest &>/dev/null && [ -d tests ]; then
+            pytest -v
+          else
+            echo "No tests to run"
+          fi
+
+  # ── MCP: lint + build + test ────────────────────────────────────────────
+  mcp-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - run: cd shaka-mcp && pnpm install --frozen-lockfile && pnpm run lint
 
   mcp-build:
     runs-on: ubuntu-latest
@@ -90,7 +109,7 @@ jobs:
           version: 10
       - run: cd shaka-mcp && pnpm install --frozen-lockfile && pnpm run build
 
-  mcp-lint:
+  mcp-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -100,4 +119,17 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-      - run: cd shaka-mcp && pnpm install --frozen-lockfile && pnpm run lint
+      - run: cd shaka-mcp && pnpm install --frozen-lockfile && pnpm run build && pnpm run test
+
+  # ── TypeScript SDK: build ───────────────────────────────────────────────
+  ts-sdk-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - run: cd wave-ts && pnpm install --frozen-lockfile && pnpm run build
