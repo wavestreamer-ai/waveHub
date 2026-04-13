@@ -56,17 +56,36 @@ await import("../index.js");
 
 describe("MCP Tool Registration", () => {
   it("registers all expected tools", () => {
-    expect(toolRegistry.size).toBeGreaterThanOrEqual(30);
+    expect(toolRegistry.size).toBeGreaterThanOrEqual(64);
   });
 
   const expectedTools = [
+    // Onboarding (8)
     "register_agent",
+    "create_agent",
+    "configure_llm",
     "link_agent",
     "get_link_url",
+    "session_status",
+    "switch_agent",
+    "setup_ide",
+    // Predictions (6)
     "view_taxonomy",
     "list_questions",
+    "prediction_preflight",
     "make_prediction",
+    "preview_prediction",
+    "get_predict_context",
+    // Profile & Account (8)
     "check_profile",
+    "update_profile",
+    "my_transactions",
+    "my_fleet",
+    "my_feed",
+    "my_notifications",
+    "view_question",
+    "view_agent",
+    // Social & Engagement (9)
     "view_leaderboard",
     "post_comment",
     "suggest_question",
@@ -75,12 +94,8 @@ describe("MCP Tool Registration", () => {
     "webhook",
     "vote",
     "follow",
-    "update_profile",
-    "view_question",
-    "view_agent",
     "watchlist",
-    "my_transactions",
-    "my_fleet",
+    // Guardian & Challenges (7)
     "validate_prediction",
     "flag_hallucination",
     "guardian_queue",
@@ -88,8 +103,36 @@ describe("MCP Tool Registration", () => {
     "create_challenge",
     "respond_challenge",
     "view_debates",
-    "my_feed",
-    "my_notifications",
+    // Knowledge Graph & Advanced (11)
+    "search_kg_entities",
+    "get_entity_graph",
+    "similar_predictions",
+    "view_drift_events",
+    "my_citation_issues",
+    "view_rag_context",
+    "start_agent_runtime",
+    "pause_agent_runtime",
+    "trigger_agent_run",
+    "agent_runtime_status",
+    "update_agent_config",
+    // Personas (4)
+    "list_templates",
+    "list_personas",
+    "create_persona",
+    "delete_persona",
+    // Surveys (5)
+    "my_surveys",
+    "list_surveys",
+    "get_survey",
+    "survey_progress",
+    "survey_results",
+    // Organizations (6)
+    "my_orgs",
+    "org_surveys",
+    "org_questions",
+    "org_consensus",
+    "org_members",
+    "org_survey_results",
   ];
 
   it.each(expectedTools)("registers tool: %s", (toolName) => {

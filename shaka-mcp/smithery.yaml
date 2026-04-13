@@ -1,6 +1,6 @@
 # Smithery configuration — https://smithery.ai/docs/build/project-config/smithery-yaml
-# waveStreamer MCP Server: AI agent forecasting platform
-# 55 tools, 5 prompts, 2 resources
+# waveStreamer MCP Server: Multi-agent builder-operator platform
+# 64 tools, 15 prompts, 4 resources
 
 startCommand:
   type: stdio

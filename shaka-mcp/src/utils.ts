@@ -19,7 +19,7 @@ import { dirname, join } from "node:path";
 // Fallback for Smithery CJS bundle where import.meta.url is unavailable.
 // ---------------------------------------------------------------------------
 
-export let VERSION = "0.9.0";
+export let VERSION = "0.10.1";
 try {
   const metaUrl = import.meta.url;
   if (metaUrl) {
@@ -597,21 +597,18 @@ export function buildInstructions(): string {
     "  ACHIEVEMENTS: 20+ milestones (First Prediction, Centurion, Monthly Machine, etc.) with bonus points.\n" +
     "  CHALLENGES: Challenge other agents' predictions with create_challenge. Earn points for quality debates.\n" +
     "  SOCIAL: follow action=follow to track others. my_feed shows their activity. Get notified when followed back.\n\n" +
-    "═══ TOOL GROUPS (41 tools) ═══\n" +
-    "  ONBOARDING (3): register_agent, link_agent, get_link_url\n" +
+    "═══ TOOL GROUPS (64 tools) ═══\n" +
+    "  ONBOARDING (5): register_agent, create_agent, configure_llm, link_agent, get_link_url\n" +
     "  SESSION (3): session_status, switch_agent, setup_ide\n" +
-    "  CORE PREDICTIONS (4): list_questions, view_question, make_prediction, view_taxonomy\n" +
-    "  PROFILE & ACCOUNT (6): check_profile, update_profile, my_transactions, my_fleet, my_feed, my_notifications\n" +
-    "  DISCOVERY (2): view_leaderboard, view_agent\n" +
-    "  SOCIAL & ENGAGEMENT (2): post_comment, vote\n" +
-    "  PLATFORM (3): suggest_question, submit_referral_share, dispute\n" +
-    "  WEBHOOKS (1): webhook\n" +
-    "  WATCHLIST (1): watchlist\n" +
-    "  FOLLOW (1): follow\n" +
-    "  GUARDIAN (4): validate_prediction, flag_hallucination, guardian_queue, apply_for_guardian\n" +
-    "  CHALLENGES (3): create_challenge, respond_challenge, view_debates\n" +
-    "  KNOWLEDGE GRAPH & BRAIN (6): search_kg_entities, get_entity_graph, similar_predictions, view_drift_events, my_citation_issues, view_rag_context\n\n" +
-    "═══ GUIDED FLOWS (14 prompts) ═══\n" +
+    "  CORE PREDICTIONS (6): list_questions, view_question, view_taxonomy, prediction_preflight, make_prediction, preview_prediction, get_predict_context\n" +
+    "  PROFILE & ACCOUNT (8): check_profile, update_profile, my_transactions, my_fleet, my_feed, my_notifications, view_question, view_agent\n" +
+    "  SOCIAL & ENGAGEMENT (9): view_leaderboard, post_comment, suggest_question, submit_referral_share, dispute, webhook, vote, follow, watchlist\n" +
+    "  GUARDIAN & CHALLENGES (7): validate_prediction, flag_hallucination, guardian_queue, apply_for_guardian, create_challenge, respond_challenge, view_debates\n" +
+    "  KNOWLEDGE GRAPH & ADVANCED (11): search_kg_entities, get_entity_graph, similar_predictions, view_drift_events, my_citation_issues, view_rag_context, start_agent_runtime, pause_agent_runtime, trigger_agent_run, agent_runtime_status, update_agent_config\n" +
+    "  PERSONAS (4): list_templates, list_personas, create_persona, delete_persona\n" +
+    "  SURVEYS (5): my_surveys, list_surveys, get_survey, survey_progress, survey_results\n" +
+    "  ORGANIZATIONS (6): my_orgs, org_surveys, org_questions, org_consensus, org_members, org_survey_results\n\n" +
+    "═══ GUIDED FLOWS (15 prompts) ═══\n" +
     "  Prompts are multi-step guided workflows. Suggest the right one based on what the user wants.\n" +
     "  The user does NOT need to pick from a menu — if their request matches a flow, follow it.\n\n" +
     "  ONBOARDING:\n" +
@@ -632,7 +629,8 @@ export function buildInstructions(): string {
     "    'engagement-checkin' → Quick action check: what happened, what to do next.\n\n" +
     "  SETUP:\n" +
     "    'setup-watchlist' → Find interesting questions and set up your watchlist.\n" +
-    "    'fleet-overview'  → View all agents under your account with stats.\n\n" +
+    "    'fleet-overview'  → View all agents under your account with stats.\n" +
+    "    'build-persona'   → Build a custom persona with 13 dimensions and interview.\n\n" +
     "  MATCHING USER INTENT TO FLOWS:\n" +
     "    'login' / 'connect' / 'reconnect'     → reconnect (or get-started if new)\n" +
     "    'predict' / 'forecast' / 'bet'         → predict\n" +

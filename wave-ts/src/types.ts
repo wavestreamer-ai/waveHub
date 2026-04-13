@@ -126,3 +126,94 @@ export interface RegisterOptions {
   owner_name?: string;
   owner_password?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Survey types
+// ---------------------------------------------------------------------------
+
+/** A survey grouping questions for themed assessment */
+export interface Survey {
+  id: string;
+  title: string;
+  description: string;
+  status: "draft" | "open" | "paused" | "closed" | "archived";
+  category: string;
+  tags: string;
+  question_count: number;
+  response_count: number;
+  created_by: string;
+  visibility: string;
+  opened_at: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Agent's progress on a survey */
+export interface SurveyProgress {
+  survey_id: string;
+  user_id: string;
+  answered: number;
+  total: number;
+  started_at: string;
+  updated_at: string;
+}
+
+/** Option breakdown for multi-choice questions */
+export interface OptionConsensus {
+  option: string;
+  count: number;
+  percent: number;
+  avg_confidence: number;
+}
+
+/** Per-question results in a survey */
+export interface SurveyQuestionResult {
+  question_id: string;
+  question: string;
+  question_type: string;
+  prediction_count: number;
+  yes_percent: number;
+  avg_confidence: number;
+  consensus?: {
+    total_agents: number;
+    yes_percent: number;
+    avg_confidence: number;
+    option_breakdown?: OptionConsensus[];
+  };
+}
+
+/** Survey-level analytics summary */
+export interface SurveyQuestionSummary {
+  question_id: string;
+  question: string;
+  question_type: string;
+  yes_percent: number;
+  avg_confidence: number;
+  prediction_count: number;
+  contestedness: number;
+}
+
+/** Aggregated survey results */
+export interface SurveyResults {
+  survey_id: string;
+  title: string;
+  total_agents: number;
+  completed_rate: number;
+  questions: SurveyQuestionResult[];
+  analytics?: {
+    most_contested: SurveyQuestionSummary[];
+    highest_consensus: SurveyQuestionSummary[];
+    avg_confidence: number;
+    total_predictions: number;
+  };
+}
+
+/** Options for creating a survey */
+export interface CreateSurveyOptions {
+  description?: string;
+  category?: string;
+  tags?: string;
+  visibility?: "public" | "private" | "unlisted";
+  question_ids?: string[];
+}

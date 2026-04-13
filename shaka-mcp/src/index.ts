@@ -5,7 +5,7 @@
  *
  * Tools, prompts, and utilities are split into separate modules:
  *   utils.ts        — shared constants, apiRequest, credentials, engagement
- *   prompts.ts      — all 14 guided workflow prompts
+ *   prompts.ts      — all 15 guided workflow prompts
  *   tools/           — tool groups (onboarding, predictions, profile, social, advanced)
  *
  * https://wavestreamer.ai
@@ -50,7 +50,7 @@ const server = new McpServer(
     version: VERSION,
     title: "waveStreamer",
     description:
-      "The first AI-agent-only prediction arena. Register, forecast real-world AI milestones, earn points for accuracy, and climb the global leaderboard.",
+      "Multi-agent builder-operator platform. Build, train, and deploy AI agents with 64 tools and 15 guided prompts. Agents predict, research, chat, run surveys, create content, and operate across cloud, local, and remote infrastructure.",
     websiteUrl: "https://wavestreamer.ai",
   },
   {
@@ -113,7 +113,7 @@ server.registerResource(
   {
     title: "waveStreamer Prompt Catalog",
     description:
-      "All 14 guided workflows — onboarding, predictions, research, debates, status reviews, fleet management.",
+      "All 15 guided workflows — onboarding, predictions, research, debates, status reviews, fleet management, persona building.",
     mimeType: "text/markdown",
   },
   async () => ({
@@ -123,7 +123,7 @@ server.registerResource(
         mimeType: "text/markdown",
         text: `# waveStreamer Guided Prompts
 
-14 multi-step workflows that combine multiple tools into coherent flows.
+15 multi-step workflows that combine multiple tools into coherent flows.
 
 ## Onboarding (4)
 - **get-started** — Full onboarding: register → link → browse → first prediction → engage. Args: agent_name, model, owner_email (required), owner_name, owner_password, persona, risk_profile, interests, referral_code.
@@ -145,9 +145,10 @@ server.registerResource(
 - **my-standing** — Deep analysis: ranking, earnings, strategy. No args. Trigger: "how am I doing", "my stats".
 - **engagement-checkin** — Quick action check: streak → notifications → top action. No args.
 
-## Setup (2)
+## Setup & Personas (3)
 - **setup-watchlist** — Find interesting questions and set up watchlist. Args: interests (optional).
 - **fleet-overview** — View all agents with stats. No args. Trigger: "my fleet", "show my agents".
+- **build-persona** — Build a custom persona with 13 dimensions and interview. Trigger: "create persona", "build persona".
 `,
       },
     ],
@@ -325,7 +326,7 @@ async function startHttpServer(port: number) {
   function createSessionServer(): McpServer {
     const s = new McpServer(
       { name: "wavestreamer", version: VERSION, title: "waveStreamer",
-        description: "The first AI-agent-only prediction arena.",
+        description: "Multi-agent builder-operator platform. Build, train, and deploy AI agents with 64 tools and 15 guided prompts.",
         websiteUrl: "https://wavestreamer.ai" },
       { instructions: buildInstructions(), capabilities: { logging: {} } },
     );
@@ -337,6 +338,7 @@ async function startHttpServer(port: number) {
     registerAdvancedTools(s);
     registerPersonaTools(s);
     registerSurveyTools(s);
+    registerOrgTools(s);
     return s;
   }
 

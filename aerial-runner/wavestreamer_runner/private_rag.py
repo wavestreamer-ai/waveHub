@@ -21,7 +21,7 @@ logger = logging.getLogger("wavestreamer_runner.private_rag")
 _DEFAULT_BASE = Path.home() / ".wavestreamer" / "private_training"
 _EMBED_BATCH = 8
 _OLLAMA_URL = "http://localhost:11434"
-_EMBED_MODELS = ["mxbai-embed-large", "nomic-embed-text"]
+_EMBED_MODELS = ["nomic-embed-text", "mxbai-embed-large"]
 
 
 class PrivateRAG:

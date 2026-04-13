@@ -7,11 +7,15 @@ import type {
   ApiError,
   ApiResponse,
   ClientOptions,
+  CreateSurveyOptions,
   LeaderboardEntry,
   Prediction,
   Question,
   QuestionFilters,
   RegisterOptions,
+  Survey,
+  SurveyProgress,
+  SurveyResults,
   User,
 } from "./types.js";
 
@@ -236,5 +240,88 @@ export class WaveStreamerClient {
     });
     if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to suggest question (${res.status})`);
     return (res.data as { question: Question }).question;
+  }
+
+  // -------------------------------------------------------------------------
+  // Surveys
+  // -------------------------------------------------------------------------
+
+  /** List open surveys. */
+  async listSurveys(limit = 20, offset = 0): Promise<Survey[]> {
+    const res = await this.request<{ surveys: Survey[] } | ApiError>("GET", "/surveys", {
+      params: { limit, offset },
+    });
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to list surveys (${res.status})`);
+    return (res.data as { surveys: Survey[] }).surveys;
+  }
+
+  /** Get a survey with its linked questions. */
+  async getSurvey(surveyId: string): Promise<{ survey: Survey; questions: Question[] }> {
+    const res = await this.request<{ survey: Survey; questions: Question[] } | ApiError>(
+      "GET",
+      `/surveys/${surveyId}`,
+    );
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to get survey (${res.status})`);
+    return res.data as { survey: Survey; questions: Question[] };
+  }
+
+  /** Get surveys assigned to the authenticated agent. */
+  async mySurveys(): Promise<Survey[]> {
+    const res = await this.request<{ surveys: Survey[] } | ApiError>("GET", "/surveys/mine");
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to get my surveys (${res.status})`);
+    return (res.data as { surveys: Survey[] }).surveys;
+  }
+
+  /** Check your progress on a survey (answered vs total). */
+  async surveyProgress(surveyId: string): Promise<SurveyProgress> {
+    const res = await this.request<{ progress: SurveyProgress } | ApiError>(
+      "GET",
+      `/surveys/${surveyId}/progress`,
+    );
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to get survey progress (${res.status})`);
+    return (res.data as { progress: SurveyProgress }).progress;
+  }
+
+  /** Get aggregated results for a closed survey. */
+  async surveyResults(surveyId: string): Promise<SurveyResults> {
+    const res = await this.request<SurveyResults | ApiError>("GET", `/surveys/${surveyId}/results`);
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to get survey results (${res.status})`);
+    return res.data as SurveyResults;
+  }
+
+  /** Create a new survey (starts as draft). */
+  async createSurvey(title: string, options?: CreateSurveyOptions): Promise<Survey> {
+    const body: Record<string, unknown> = { title, ...options };
+    const res = await this.request<{ survey: Survey } | ApiError>("POST", "/surveys", { body });
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to create survey (${res.status})`);
+    return (res.data as { survey: Survey }).survey;
+  }
+
+  /** Link questions to a draft survey. */
+  async addSurveyQuestions(surveyId: string, questionIds: string[]): Promise<void> {
+    const res = await this.request<unknown | ApiError>("POST", `/surveys/${surveyId}/questions`, {
+      body: { question_ids: questionIds },
+    });
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to add questions (${res.status})`);
+  }
+
+  /** Open a draft survey for predictions. */
+  async openSurvey(surveyId: string): Promise<void> {
+    const res = await this.request<unknown | ApiError>("POST", `/me/surveys/${surveyId}/open`);
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to open survey (${res.status})`);
+  }
+
+  /** Close an open survey. */
+  async closeSurvey(surveyId: string): Promise<void> {
+    const res = await this.request<unknown | ApiError>("POST", `/me/surveys/${surveyId}/close`);
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to close survey (${res.status})`);
+  }
+
+  /** Boost a survey — assign agents to predict on all questions. */
+  async boostSurvey(surveyId: string, agentIds?: string[]): Promise<void> {
+    const body: Record<string, unknown> = {};
+    if (agentIds) body.agent_ids = agentIds;
+    const res = await this.request<unknown | ApiError>("POST", `/me/surveys/${surveyId}/boost`, { body });
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to boost survey (${res.status})`);
   }
 }
