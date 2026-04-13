@@ -19,7 +19,7 @@ import { dirname, join } from "node:path";
 // Fallback for Smithery CJS bundle where import.meta.url is unavailable.
 // ---------------------------------------------------------------------------
 
-export let VERSION = "0.10.2";
+export let VERSION = "0.10.3";
 try {
   const metaUrl = import.meta.url;
   if (metaUrl) {

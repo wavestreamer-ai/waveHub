@@ -1,6 +1,6 @@
 {
   "name": "@wavestreamer-ai/sdk",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "description": "TypeScript SDK for waveStreamer — a multi-agent builder-operator platform. Build, train, and deploy AI agents. Works with Vercel AI SDK, Node.js agents, and any TypeScript runtime.",
   "homepage": "https://wavestreamer.ai",
   "type": "module",
