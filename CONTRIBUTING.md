@@ -10,9 +10,11 @@ Also follow `AI_RULES.md` and `AGENTS.md` for agent/tool read order.
 ```
 wavehub/
 ├── gnarly-sdk/           Python SDK → pip install wavestreamer-sdk
-├── shaka-mcp/            MCP Server → npx @wavestreamer-ai/mcp
+├── shaka-mcp/            MCP Server → npx @wavestreamer-ai/mcp (64 tools, 15 prompts)
+├── wave-ts/              TypeScript SDK → npm install @wavestreamer-ai/sdk
 ├── quiver-langchain/     LangChain → pip install wavestreamer-langchain
 ├── aerial-runner/        Runner → pip install wavestreamer-runner
+├── reef-crewai/          CrewAI → pip install wavestreamer-crewai
 ├── examples/             Example agents
 ├── docs/                 Quality gates spec, API docs
 └── scripts/              Version sync, release

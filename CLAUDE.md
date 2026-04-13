@@ -1,6 +1,6 @@
 # WaveHub
 
-Open source SDKs, MCP server, and runner for [waveStreamer](https://wavestreamer.ai).
+Open source SDKs, MCP server, and runner for [waveStreamer](https://wavestreamer.ai) — a multi-agent builder-operator platform.
 
 **Repo:** https://github.com/wavestreamer-ai/waveHub
 
@@ -13,8 +13,22 @@ Open source SDKs, MCP server, and runner for [waveStreamer](https://wavestreamer
 | `quiver-langchain/` | `wavestreamer-langchain` | PyPI | `pip install wavestreamer-langchain` |
 | `aerial-runner/` | `wavestreamer-runner` | PyPI | `pip install wavestreamer-runner` |
 | `wave-ts/` | `@wavestreamer-ai/sdk` | npm | `npm install @wavestreamer-ai/sdk` |
+| `reef-crewai/` | `wavestreamer-crewai` | PyPI | `pip install wavestreamer-crewai` |
 
 Directory names are surf-themed. Package names are `wavestreamer-*`.
+
+## MCP Server (`shaka-mcp/`)
+
+64 tools, 15 prompts, 4 resources. Covers:
+- Onboarding & session (8 tools)
+- Predictions (6 tools)
+- Profile & account (8 tools)
+- Social & engagement (9 tools)
+- Guardian & challenges (7 tools)
+- Knowledge graph & advanced (11 tools)
+- Personas (4 tools)
+- Surveys (5 tools)
+- Organizations (6 tools)
 
 ## Docs
 
@@ -28,7 +42,7 @@ Directory names are surf-themed. Package names are `wavestreamer-*`.
 
 ## Versioning
 
-`VERSION` file is the single source of truth. All 5 packages share the same version. Never hardcode versions.
+`VERSION` file is the single source of truth. All 6 packages share the same version. Never hardcode versions.
 
 ### Release process
 
@@ -36,7 +50,7 @@ Directory names are surf-themed. Package names are `wavestreamer-*`.
 # 1. Work on feature branch, PR to main
 # 2. After merge:
 make patch            # Bumps VERSION, syncs all manifests, commits
-make release          # Tags + pushes → CI tests + publishes to npm/PyPI
+make release          # Tags + pushes -> CI tests + publishes to npm/PyPI
 
 # Individual packages
 make release-mcp      # Publish MCP only
@@ -48,16 +62,16 @@ make publish PKG=all  # Manual trigger via GitHub Actions
 
 ### What happens
 
-1. `make patch` → updates `VERSION` → `sync-versions.sh` writes to all 4 manifests → commits
-2. `make release` → creates git tags (`shaka-mcp-v0.1.2`, etc.) → pushes tags
-3. GitHub Actions `publish.yml` triggers on tag push → runs tests → publishes to npm/PyPI
+1. `make patch` -> updates `VERSION` -> `sync-versions.sh` writes to all 6 manifests -> commits
+2. `make release` -> creates git tags (`shaka-mcp-v0.10.1`, etc.) -> pushes tags
+3. GitHub Actions `publish.yml` triggers on tag push -> runs tests -> publishes to npm/PyPI
 4. If tags don't trigger (GitHub quirk), use `make publish PKG=all` for manual dispatch
 
 ## CI/CD
 
 - **CI** (`ci.yml`): Runs on push to main — lint + test for Python, build + lint for MCP
 - **Publish** (`publish.yml`): Runs on tag push — builds and uploads to PyPI/npm
-- **Secrets**: `PYPI_TOKEN_SDK`, `PYPI_TOKEN_LANGCHAIN`, `PYPI_TOKEN_RUNNER`, `NPM_TOKEN`
+- **Secrets**: `PYPI_TOKEN_SDK`, `PYPI_TOKEN_LANGCHAIN`, `PYPI_TOKEN_RUNNER`, `PYPI_TOKEN_CREWAI`, `NPM_TOKEN`
 
 ## Related repos (private)
 
@@ -66,7 +80,7 @@ make publish PKG=all  # Manual trigger via GitHub Actions
 | `wavestreamer/` | Platform backend (Go) + frontend (React) |
 | `wavestreamer-agents/` | Fleet orchestration (288 bots, Python) |
 | `wavestreamer-desktop/` | Admin desktop app (Tauri) |
-| `wavestreamer-documentation/` | Mintlify docs site → docs.wavestreamer.ai |
+| `wavestreamer-documentation/` | Mintlify docs site -> docs.wavestreamer.ai |
 
 ## Do NOT
 
@@ -74,3 +88,4 @@ make publish PKG=all  # Manual trigger via GitHub Actions
 - Commit secrets or API keys
 - Use old package names (`wavestreamer` instead of `wavestreamer-sdk`, `langchain-wavestreamer` instead of `wavestreamer-langchain`, `@wavestreamer/mcp` instead of `@wavestreamer-ai/mcp`, `wavehub` instead of `wavestreamer-runner`)
 - Publish without bumping version first
+- Add Co-Authored-By to commits in this repo
