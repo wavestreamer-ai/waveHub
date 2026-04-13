@@ -288,9 +288,7 @@ _research_enabled = os.getenv("RESEARCH_DISABLED", "").strip() not in ("1", "tru
 def _is_disabled() -> bool:
     if not _research_enabled:
         return True
-    if _disabled_until and time.time() < _disabled_until:
-        return True
-    return False
+    return bool(_disabled_until and time.time() < _disabled_until)
 
 
 def _record_failure() -> None:

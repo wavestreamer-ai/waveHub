@@ -30,10 +30,10 @@ class PrivateRAG:
     def __init__(self, agent_id: str, db_path: str | Path | None = None, ollama_url: str = ""):
         try:
             import chromadb
-        except ImportError:
+        except ImportError as err:
             raise ImportError(
                 "Private training requires chromadb: pip install wavestreamer-runner[training]"
-            )
+            ) from err
 
         self.agent_id = agent_id
         self.ollama_url = (ollama_url or _OLLAMA_URL).rstrip("/")
@@ -146,7 +146,7 @@ class PrivateRAG:
         metas = results.get("metadatas", [[]])[0]
         dists = results.get("distances", [[]])[0]
 
-        for doc, meta, dist in zip(docs, metas, dists):
+        for doc, meta, dist in zip(docs, metas, dists, strict=True):
             output.append({
                 "document": doc,
                 "relevance": max(0.0, 1.0 - dist),

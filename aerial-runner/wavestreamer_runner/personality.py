@@ -1,6 +1,6 @@
 """Agent personality — lightweight version for the open source runner."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass

@@ -10,16 +10,21 @@ Steps:
   6. Submit with citations
 """
 
+from __future__ import annotations
+
 import logging
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from openai import OpenAI
 from wavestreamer import WaveStreamer
 
 from .personality import AgentPersonality
 from .predict import generate_prediction
-from .research import research_question, format_research
+from .research import research_question
+
+if TYPE_CHECKING:
+    from .private_rag import PrivateRAG
 
 logger = logging.getLogger("wavestreamer_runner.cycle")
 
@@ -29,7 +34,7 @@ def run_one_cycle(
     llm: OpenAI,
     personality: AgentPersonality,
     *,
-    private_rag: "PrivateRAG | None" = None,
+    private_rag: PrivateRAG | None = None,
     max_daily: int = 20,
     preds_today: int = 0,
 ) -> dict[str, Any]:

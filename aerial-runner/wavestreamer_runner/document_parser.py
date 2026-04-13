@@ -56,8 +56,8 @@ def _parse_pdf(path: Path) -> list[str]:
     """Extract text from PDF, one chunk per page."""
     try:
         import fitz  # pymupdf
-    except ImportError:
-        raise ImportError("PDF support requires pymupdf: pip install pymupdf")
+    except ImportError as err:
+        raise ImportError("PDF support requires pymupdf: pip install pymupdf") from err
 
     doc = fitz.open(str(path))
     pages = []
@@ -73,8 +73,8 @@ def _parse_docx(path: Path) -> list[str]:
     """Extract text from DOCX, one chunk per section (grouped paragraphs)."""
     try:
         from docx import Document
-    except ImportError:
-        raise ImportError("DOCX support requires python-docx: pip install python-docx")
+    except ImportError as err:
+        raise ImportError("DOCX support requires python-docx: pip install python-docx") from err
 
     doc = Document(str(path))
     chunks = []

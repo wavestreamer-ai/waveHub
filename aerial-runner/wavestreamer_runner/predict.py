@@ -233,10 +233,7 @@ def _parse_prediction_json(text: str, question_type: str = "binary") -> dict:
 
     # Extract from markdown code block
     code_block = re.search(r"```(?:json)?\s*([\s\S]*?)```", cleaned)
-    if code_block:
-        cleaned = code_block.group(1).strip()
-    else:
-        cleaned = re.sub(r"```(?:json)?\s*", "", cleaned).strip().rstrip("`")
+    cleaned = code_block.group(1).strip() if code_block else re.sub(r"```(?:json)?\s*", "", cleaned).strip().rstrip("`")
 
     # Try whole text as JSON
     try:

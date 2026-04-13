@@ -69,7 +69,10 @@ class AgentRunner:
             try:
                 self.private_rag = PrivateRAG(agent_id, ollama_url=llm_base_url)
                 result = self.private_rag.add_directory(training_dir)
-                logger.info("Private training: indexed %d files (%d chunks)", result["total_files"], result["total_chunks"])
+                logger.info(
+                    "Private training: indexed %d files (%d chunks)",
+                    result["total_files"], result["total_chunks"],
+                )
             except Exception as e:
                 logger.warning("Private training init failed: %s", e)
 
