@@ -2,8 +2,8 @@
 
 import json
 
-from wavestreamer_runner.predict import _parse_prediction_json, _normalize, _get_perspective
 from wavestreamer_runner.personality import AgentPersonality
+from wavestreamer_runner.predict import _get_perspective, _normalize, _parse_prediction_json
 
 
 class TestParsePredictionJson:

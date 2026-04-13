@@ -1,6 +1,6 @@
 """Tests for research module — domain filtering and query building."""
 
-from wavestreamer_runner.research import _is_blocked, _is_bare_domain
+from wavestreamer_runner.research import _is_bare_domain, _is_blocked
 
 
 class TestIsBlocked:
