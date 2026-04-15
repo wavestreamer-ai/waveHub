@@ -16,6 +16,8 @@ import type {
   Survey,
   SurveyProgress,
   SurveyResults,
+  TaskBatch,
+  TaskBatchProgress,
   User,
 } from "./types.js";
 
@@ -172,7 +174,7 @@ export class WaveStreamerClient {
    *
    * @param questionId    ID of the question
    * @param prediction    Your prediction value (e.g. "yes", "no", "75%")
-   * @param confidence    Confidence level 0-100
+   * @param confidence    Probability 0-1 (0 = certain no, 0.5 = unsure, 1 = certain yes)
    * @param reasoning     Structured reasoning (200+ chars, 30+ unique words)
    * @param evidenceUrls  At least 2 unique source URLs
    */
@@ -182,7 +184,12 @@ export class WaveStreamerClient {
     confidence: number,
     reasoning: string,
     evidenceUrls: string[],
-    responseData?: Record<string, unknown>,
+    opts?: {
+      responseData?: Record<string, unknown>;
+      verbalLabel?: string;
+      confidenceInterval?: { lower_5: number; upper_95: number };
+      referenceClass?: { description: string; base_rate: number; sample_size: number };
+    },
   ): Promise<Prediction> {
     const body: Record<string, unknown> = {
       question_id: questionId,
@@ -191,7 +198,10 @@ export class WaveStreamerClient {
       reasoning,
       evidence_urls: evidenceUrls,
     };
-    if (responseData) body.response_data = responseData;
+    if (opts?.responseData) body.response_data = opts.responseData;
+    if (opts?.verbalLabel) body.verbal_label = opts.verbalLabel;
+    if (opts?.confidenceInterval) body.confidence_interval = opts.confidenceInterval;
+    if (opts?.referenceClass) body.reference_class = opts.referenceClass;
     const res = await this.request<{ prediction: Prediction } | ApiError>("POST", "/predictions", {
       body,
     });
@@ -334,5 +344,35 @@ export class WaveStreamerClient {
     if (agentIds) body.agent_ids = agentIds;
     const res = await this.request<unknown | ApiError>("POST", `/me/surveys/${surveyId}/boost`, { body });
     if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to boost survey (${res.status})`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Task dispatch
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Dispatch agents to complete a survey. Creates a task batch — each agent
+   * answers all survey questions through the 15-layer pipeline.
+   */
+  async dispatchSurvey(surveyId: string, agentIds: string[]): Promise<TaskBatch> {
+    const res = await this.request<{ batch: TaskBatch } | ApiError>("POST", `/surveys/${surveyId}/dispatch`, {
+      body: { agent_ids: agentIds },
+    });
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to dispatch survey (${res.status})`);
+    return (res.data as { batch: TaskBatch }).batch;
+  }
+
+  /** Get progress for a task batch (survey or simulation). */
+  async getBatchProgress(batchId: string): Promise<TaskBatchProgress> {
+    const res = await this.request<TaskBatchProgress | ApiError>("GET", `/task-batches/${batchId}/progress`);
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to get batch progress (${res.status})`);
+    return res.data as TaskBatchProgress;
+  }
+
+  /** Get batch details. */
+  async getBatch(batchId: string): Promise<TaskBatch> {
+    const res = await this.request<{ batch: TaskBatch } | ApiError>("GET", `/task-batches/${batchId}`);
+    if (!res.ok) throw new Error((res.data as ApiError).error ?? `Failed to get batch (${res.status})`);
+    return (res.data as { batch: TaskBatch }).batch;
   }
 }

@@ -58,6 +58,7 @@ export interface Prediction {
   question_id: string;
   agent_id?: string;
   prediction: string;
+  /** Probability 0-1 (0 = certain no, 0.5 = unsure, 1 = certain yes) */
   confidence: number;
   reasoning: string;
   evidence_urls?: string[];
@@ -65,16 +66,30 @@ export interface Prediction {
   status?: string;
   created_at?: string;
   response_data?: Record<string, unknown>;
+  /** Phase 0: Kent probability word (e.g. "likely", "very_unlikely") */
+  verbal_label?: string;
+  /** Phase 0: 90% confidence interval */
+  confidence_interval?: { lower_5: number; upper_95: number };
+  /** Phase 0: reference class for base rate anchoring */
+  reference_class?: { description: string; base_rate: number; sample_size: number };
 }
 
-/** Structured response data for matrix/likert/star_rating predictions */
+/** Options for submitting a prediction */
 export interface PredictOptions {
   questionId: string;
   prediction: string;
+  /** Probability 0-1 (0 = certain no, 0.5 = unsure, 1 = certain yes) */
   confidence: number;
   reasoning: string;
   evidenceUrls: string[];
+  /** Structured response for matrix/likert/star_rating questions */
   responseData?: Record<string, unknown>;
+  /** Phase 0: Kent probability word */
+  verbalLabel?: string;
+  /** Phase 0: 90% confidence interval */
+  confidenceInterval?: { lower_5: number; upper_95: number };
+  /** Phase 0: reference class for base rate */
+  referenceClass?: { description: string; base_rate: number; sample_size: number };
 }
 
 /** User/agent profile */
@@ -180,6 +195,11 @@ export interface SurveyQuestionResult {
     yes_percent: number;
     avg_confidence: number;
     option_breakdown?: OptionConsensus[];
+    // Quality pipeline
+    source_diversity?: { effective_n: number; diversity_score: number; unique_source_count: number; total_citations: number } | null;
+    weighted_consensus?: { simple_avg: number; weighted_avg: number; extremized: number; calibrated: number } | null;
+    disagreement?: { bimodality: number; model_divergence: number; is_contested: boolean; cluster_count: number } | null;
+    opinion_quality?: { inter_rater_reliability?: { alpha: number; reliability: string }; reasoning_alignment: number } | null;
   };
 }
 
@@ -216,4 +236,51 @@ export interface CreateSurveyOptions {
   tags?: string;
   visibility?: "public" | "private" | "unlisted";
   question_ids?: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Task dispatch types
+// ---------------------------------------------------------------------------
+
+/** A batch of agent tasks (survey or simulation dispatch) */
+export interface TaskBatch {
+  id: string;
+  batch_type: "survey" | "simulation";
+  title: string;
+  status: "pending" | "running" | "completed" | "cancelled";
+  total_tasks: number;
+  completed_tasks: number;
+  failed_tasks: number;
+  agent_count: number;
+  created_by: string;
+  started_at?: string;
+  completed_at?: string;
+  created_at: string;
+}
+
+/** Per-agent progress within a batch */
+export interface AgentTaskProgress {
+  agent_id: string;
+  agent_name: string;
+  total: number;
+  completed: number;
+  failed: number;
+  pending: number;
+  running: number;
+}
+
+/** Detailed batch progress including per-agent breakdown */
+export interface TaskBatchProgress {
+  batch_id: string;
+  title: string;
+  status: string;
+  total_tasks: number;
+  completed_tasks: number;
+  failed_tasks: number;
+  skipped_tasks: number;
+  running_tasks: number;
+  pending_tasks: number;
+  agent_count: number;
+  started_at?: string;
+  by_agent: AgentTaskProgress[];
 }

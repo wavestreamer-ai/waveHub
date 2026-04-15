@@ -623,6 +623,48 @@ export function registerAdvancedTools(server: McpServer): void {
         output += `Yes: ${consensus.yes_pct}% | Total predictions: ${consensus.total_predictions} | Avg confidence: ${consensus.avg_confidence}%\n`;
         if (consensus.model_breakdown)
           output += `Model breakdown: ${json(consensus.model_breakdown)}\n`;
+
+        // Confidence quality metrics (from ConsensusEnricher)
+        const sd = consensus.source_diversity as Record<string, unknown> | undefined;
+        const wc = consensus.weighted_consensus as Record<string, unknown> | undefined;
+        const da = consensus.disagreement as Record<string, unknown> | undefined;
+        const rc = consensus.reference_class_agg as Record<string, unknown> | undefined;
+
+        if (sd || wc || da || rc) {
+          output += `\n── Signal Quality ──\n`;
+          if (sd) {
+            output += `Effective N: ${sd.effective_n} (of ${consensus.total_predictions} agents) | Source diversity: ${((sd.diversity_score as number) * 100).toFixed(0)}% | Unique sources: ${sd.unique_source_count}\n`;
+          }
+          if (wc) {
+            output += `Calibrated consensus: ${((wc.calibrated as number) * 100).toFixed(1)}% (simple: ${((wc.simple_avg as number) * 100).toFixed(1)}% → weighted: ${((wc.weighted_avg as number) * 100).toFixed(1)}% → extremized: ${((wc.extremized as number) * 100).toFixed(1)}%)\n`;
+          }
+          if (da) {
+            const flags: string[] = [];
+            if (da.is_contested) flags.push("CONTESTED");
+            if ((da.bimodality as number) > 0.55) flags.push(`bimodal (${((da.bimodality as number) * 100).toFixed(0)}%)`);
+            if ((da.model_divergence as number) > 15) flags.push(`model divergence ${(da.model_divergence as number).toFixed(0)}pp`);
+            if (da.cluster_count) flags.push(`${da.cluster_count} reasoning clusters`);
+            if (flags.length > 0) output += `Disagreement: ${flags.join(" | ")}\n`;
+          }
+          if (rc && (rc.agents_reporting as number) > 0) {
+            output += `Reference class base rate: ${((rc.median_base_rate as number) * 100).toFixed(0)}% (range ${((rc.base_rate_min as number) * 100).toFixed(0)}–${((rc.base_rate_max as number) * 100).toFixed(0)}%, ${rc.agents_reporting} agents reporting)\n`;
+          }
+          const oq = consensus.opinion_quality as Record<string, unknown> | undefined;
+          if (oq) {
+            const irr = oq.inter_rater_reliability as Record<string, unknown> | undefined;
+            if (irr) {
+              output += `Inter-rater reliability: α=${irr.alpha} (${irr.reliability})\n`;
+            }
+            if (oq.reasoning_alignment !== undefined) {
+              output += `Reasoning alignment: ${((oq.reasoning_alignment as number) * 100).toFixed(0)}%\n`;
+            }
+          }
+          const sq = consensus.simulation_quality as Record<string, unknown> | undefined;
+          if (sq) {
+            output += `Temporal consistency: ${((sq.temporal_consistency as number) * 100).toFixed(0)}%\n`;
+            output += `Cross-scenario consistency: ${((sq.cross_scenario_consistency as number) * 100).toFixed(0)}%\n`;
+          }
+        }
         output += `\n`;
       }
 

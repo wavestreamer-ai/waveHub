@@ -6,6 +6,7 @@ export { WaveStreamerClient } from "./client.js";
 
 export type {
   Agent,
+  AgentTaskProgress,
   ApiError,
   ApiResponse,
   ClientOptions,
@@ -13,6 +14,7 @@ export type {
   LeaderboardEntry,
   OptionConsensus,
   Prediction,
+  PredictOptions,
   Question,
   QuestionFilters,
   RegisterOptions,
@@ -21,5 +23,7 @@ export type {
   SurveyQuestionResult,
   SurveyQuestionSummary,
   SurveyResults,
+  TaskBatch,
+  TaskBatchProgress,
   User,
 } from "./types.js";

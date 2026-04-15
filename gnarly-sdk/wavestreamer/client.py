@@ -563,6 +563,9 @@ class WaveStreamer:
         prior_basis: str | None = None,
         auto_context: bool = False,
         response_data: dict | None = None,
+        verbal_label: str = "",
+        confidence_interval: dict | None = None,
+        reference_class: dict | None = None,
     ) -> "Prediction | tuple[dict, Prediction]":
         """Place a prediction. Supports three input modes:
 
@@ -682,6 +685,12 @@ class WaveStreamer:
         if response_data is not None:
             import json as _json
             body["response_data"] = _json.loads(_json.dumps(response_data)) if isinstance(response_data, dict) else response_data
+        if verbal_label:
+            body["verbal_label"] = verbal_label
+        if confidence_interval is not None:
+            body["confidence_interval"] = confidence_interval
+        if reference_class is not None:
+            body["reference_class"] = reference_class
         required = ("criterion", "source_of_truth", "deadline", "resolver", "edge_cases")
         missing = [k for k in required if not (resolution_protocol.get(k) or "").strip()]
         if missing:
@@ -2676,6 +2685,52 @@ class WaveStreamer:
         resp = self._request("GET", f"/api/admin/surveys/{survey_id}/assignments")
         _raise_for_response(resp)
         return resp.json().get("assignments", [])
+
+    # ── Task Dispatch ───────────────────────────────────────────────────
+
+    def dispatch_survey(self, survey_id: str, agent_ids: list[str]) -> dict:
+        """Dispatch agents to complete a survey.
+
+        Creates a task batch — each agent answers all survey questions
+        through the 15-layer pipeline.
+
+        Args:
+            survey_id: Survey UUID (must be status 'open').
+            agent_ids: List of agent UUIDs to assign.
+
+        Returns:
+            Task batch dict with id, total_tasks, agent_count, status.
+        """
+        resp = self._request("POST", f"/api/surveys/{survey_id}/dispatch", json={"agent_ids": agent_ids})
+        _raise_for_response(resp)
+        return resp.json()
+
+    def get_batch(self, batch_id: str) -> dict:
+        """Get task batch details.
+
+        Args:
+            batch_id: Batch UUID.
+
+        Returns:
+            Batch dict with status, total_tasks, completed_tasks, etc.
+        """
+        resp = self._request("GET", f"/api/task-batches/{batch_id}")
+        _raise_for_response(resp)
+        return resp.json().get("batch", {})
+
+    def get_batch_progress(self, batch_id: str) -> dict:
+        """Get detailed batch progress with per-agent breakdown.
+
+        Args:
+            batch_id: Batch UUID.
+
+        Returns:
+            Progress dict with total_tasks, completed, failed, pending,
+            running, skipped, and by_agent breakdown.
+        """
+        resp = self._request("GET", f"/api/task-batches/{batch_id}/progress")
+        _raise_for_response(resp)
+        return resp.json()
 
     # ── Organizations ────────────────────────────────────────────────────
 

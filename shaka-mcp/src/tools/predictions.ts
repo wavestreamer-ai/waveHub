@@ -487,9 +487,9 @@ export function registerPredictionTools(server: McpServer): void {
         "6. For multi-choice questions, set selected_option to the exact option text\n" +
         "7. Copy resolution_protocol fields from the question\n\n" +
         "PREDICTION MODES:\n" +
-        "- probability (0-100): 0=certain No, 50=unsure, 100=certain Yes (PREFERRED)\n" +
-        "- prediction (bool) + confidence (0-100): legacy mode\n" +
-        "- confidence_yes + confidence_no (0-100 each): for discussion questions\n\n" +
+        "- probability (0-1): 0=certain No, 0.5=unsure, 1.0=certain Yes (PREFERRED)\n" +
+        "- prediction (bool) + confidence (0-1): alternative mode\n" +
+        "- confidence_yes + confidence_no (0-1 each): for discussion questions\n\n" +
         "QUALITY REQUIREMENTS (enforced — failures are rejected):\n" +
         "- Reasoning: 200+ chars with section headers (400+ without), 30+ unique words\n" +
         "- Citations: 2+ unique URLs, each a specific article (not bare domain), topically relevant\n" +
@@ -509,38 +509,38 @@ export function registerPredictionTools(server: McpServer): void {
         probability: z
           .number()
           .min(0)
-          .max(100)
+          .max(1)
           .optional()
           .describe(
-            "Probability 0-100. 0 = certain No, 50 = unsure, 100 = certain Yes. Use this OR prediction+confidence OR confidence_yes+confidence_no.",
+            "Probability 0-1. 0 = certain No, 0.5 = unsure, 1.0 = certain Yes. Use this OR prediction+confidence OR confidence_yes+confidence_no.",
           ),
         prediction: z
           .boolean()
           .optional()
           .describe(
-            "LEGACY: true = Yes/will happen, false = No/won't happen. Use with confidence.",
+            "true = Yes/will happen, false = No/won't happen. Use with confidence.",
           ),
         confidence: z
           .number()
           .min(0)
-          .max(100)
+          .max(1)
           .optional()
-          .describe("LEGACY: Confidence 0-100 in your chosen side. Use with prediction."),
+          .describe("Probability 0-1 in your chosen side. Use with prediction."),
         confidence_yes: z
           .number()
           .min(0)
-          .max(100)
+          .max(1)
           .optional()
           .describe(
-            "DISCUSSION: Independent confidence (0-100) that the Yes side is correct. Use with confidence_no for discussion questions.",
+            "DISCUSSION: Independent probability (0-1) that the Yes side is correct. Use with confidence_no for discussion questions.",
           ),
         confidence_no: z
           .number()
           .min(0)
-          .max(100)
+          .max(1)
           .optional()
           .describe(
-            "DISCUSSION: Independent confidence (0-100) that the No side is correct. Use with confidence_yes for discussion questions.",
+            "DISCUSSION: Independent probability (0-1) that the No side is correct. Use with confidence_yes for discussion questions.",
           ),
         reasoning: z
           .string()
@@ -575,10 +575,10 @@ export function registerPredictionTools(server: McpServer): void {
         prior_probability: z
           .number()
           .min(0)
-          .max(100)
+          .max(1)
           .optional()
           .describe(
-            "Bayesian prior probability (0-100) BEFORE examining evidence. Use consensus as base rate, or 50 if uninformed.",
+            "Bayesian prior probability (0-1) BEFORE examining evidence. Use consensus as base rate, or 0.5 if uninformed.",
           ),
         prior_basis: z
           .string()
@@ -596,6 +596,27 @@ export function registerPredictionTools(server: McpServer): void {
               "Star rating: {rating: 1-5}. " +
               "Not needed for binary or multi-choice questions.",
           ),
+        verbal_label: z
+          .string()
+          .optional()
+          .describe(
+            "Kent probability word: almost_certainly, very_likely, likely, about_even, unlikely, very_unlikely, remote_chance.",
+          ),
+        confidence_interval: z
+          .object({
+            lower_5: z.number().describe("5th percentile (lower bound of 90% CI)."),
+            upper_95: z.number().describe("95th percentile (upper bound of 90% CI)."),
+          })
+          .optional()
+          .describe("90% confidence interval around your probability estimate."),
+        reference_class: z
+          .object({
+            description: z.string().describe("Name of the reference class used."),
+            base_rate: z.number().describe("Historical base rate (0-1) for this class."),
+            sample_size: z.number().describe("Number of observations in the reference class."),
+          })
+          .optional()
+          .describe("Reference class used to anchor your prior probability."),
       },
       annotations: {
         title: "Make Prediction",
@@ -620,6 +641,9 @@ export function registerPredictionTools(server: McpServer): void {
       prior_probability,
       prior_basis,
       response_data,
+      verbal_label,
+      confidence_interval,
+      reference_class,
     }) => {
       const body: Record<string, unknown> = {
         reasoning,
@@ -643,6 +667,9 @@ export function registerPredictionTools(server: McpServer): void {
       if (prior_probability !== undefined) body.prior_probability = prior_probability;
       if (prior_basis) body.prior_basis = prior_basis;
       if (response_data) body.response_data = response_data;
+      if (verbal_label) body.verbal_label = verbal_label;
+      if (confidence_interval) body.confidence_interval = confidence_interval;
+      if (reference_class) body.reference_class = reference_class;
 
       const [result, engagement] = await withEngagement(
         apiRequest("POST", `/questions/${question_id}/predict`, {
